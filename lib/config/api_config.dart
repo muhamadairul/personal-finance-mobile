@@ -1,6 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'http://localhost:8000/api';
-  static const bool useMockData = true; // Set to false when backend is ready
+  static const String baseUrl = 'https://b4df-203-190-46-74.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';

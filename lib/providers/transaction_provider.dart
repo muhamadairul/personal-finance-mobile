@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
-import 'package:pencatat_keuangan/config/constants.dart';
+import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/config/api_config.dart';
 
 class TransactionState {
   final List<Transaction> transactions;
@@ -28,143 +28,66 @@ class TransactionState {
 }
 
 class TransactionNotifier extends StateNotifier<TransactionState> {
-  TransactionNotifier() : super(const TransactionState());
+  final ApiService _apiService = ApiService();
 
-  int _nextId = 100;
+  TransactionNotifier() : super(const TransactionState());
 
   Future<void> fetchTransactions() async {
     state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 500));
 
-    final now = DateTime.now();
-    final mockTransactions = [
-      Transaction(
-        id: 1,
-        type: 'expense',
-        amount: 50000,
-        categoryId: 1,
-        walletId: 1,
-        note: 'Makan Siang',
-        date: now,
-        categoryName: 'Makan',
-        categoryIcon: Icons.restaurant.codePoint,
-        categoryColor: 0xFFFF6B6B,
-        walletName: 'Dompet Tunai',
-      ),
-      Transaction(
-        id: 2,
-        type: 'income',
-        amount: 5000000,
-        categoryId: 9,
-        walletId: 2,
-        note: 'Gaji Bulanan',
-        date: now.subtract(const Duration(days: 1)),
-        categoryName: 'Gaji',
-        categoryIcon: Icons.account_balance_wallet.codePoint,
-        categoryColor: 0xFF00C853,
-        walletName: 'Bank BCA',
-      ),
-      Transaction(
-        id: 3,
-        type: 'expense',
-        amount: 20000,
-        categoryId: 2,
-        walletId: 1,
-        note: 'Transportasi',
-        date: now.subtract(const Duration(days: 1)),
-        categoryName: 'Transportasi',
-        categoryIcon: Icons.directions_car.codePoint,
-        categoryColor: 0xFF4ECDC4,
-        walletName: 'Dompet Tunai',
-      ),
-      Transaction(
-        id: 4,
-        type: 'expense',
-        amount: 150000,
-        categoryId: 3,
-        walletId: 2,
-        note: 'Belanja Bulanan',
-        date: now.subtract(const Duration(days: 3)),
-        categoryName: 'Belanja',
-        categoryIcon: Icons.shopping_bag.codePoint,
-        categoryColor: 0xFFFFBE0B,
-        walletName: 'Bank BCA',
-      ),
-      Transaction(
-        id: 5,
-        type: 'expense',
-        amount: 35000,
-        categoryId: 5,
-        walletId: 3,
-        note: 'Nonton Film',
-        date: now.subtract(const Duration(days: 4)),
-        categoryName: 'Hiburan',
-        categoryIcon: Icons.movie.codePoint,
-        categoryColor: 0xFFFF9671,
-        walletName: 'GoPay',
-      ),
-      Transaction(
-        id: 6,
-        type: 'income',
-        amount: 2000000,
-        categoryId: 10,
-        walletId: 2,
-        note: 'Project Freelance',
-        date: now.subtract(const Duration(days: 5)),
-        categoryName: 'Freelance',
-        categoryIcon: Icons.laptop_mac.codePoint,
-        categoryColor: 0xFF2196F3,
-        walletName: 'Bank BCA',
-      ),
-      Transaction(
-        id: 7,
-        type: 'expense',
-        amount: 75000,
-        categoryId: 6,
-        walletId: 1,
-        note: 'Obat',
-        date: now.subtract(const Duration(days: 6)),
-        categoryName: 'Kesehatan',
-        categoryIcon: Icons.medical_services.codePoint,
-        categoryColor: 0xFF00C9A7,
-        walletName: 'Dompet Tunai',
-      ),
-    ];
-
-    state = TransactionState(transactions: mockTransactions, isLoading: false);
+    try {
+      final response = await _apiService.get(ApiConfig.transactions);
+      final List data = response.data['data'];
+      final transactions = data
+          .map((json) => Transaction.fromJson(json))
+          .toList();
+      state = TransactionState(transactions: transactions, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Gagal memuat transaksi');
+    }
   }
 
   Future<void> addTransaction(Transaction transaction) async {
-    final allCategories = DefaultCategories.all;
-    final cat = allCategories.firstWhere(
-      (c) => c['id'] == transaction.categoryId,
-      orElse: () => allCategories.last,
-    );
-
-    final newTransaction = transaction.copyWith(
-      id: _nextId++,
-      categoryName: cat['name'] as String,
-      categoryIcon: (cat['icon'] as IconData).codePoint,
-      categoryColor: cat['color'] as int,
-    );
-
-    state = state.copyWith(
-      transactions: [newTransaction, ...state.transactions],
-    );
-  }
-
-  Future<void> deleteTransaction(int id) async {
-    state = state.copyWith(
-      transactions: state.transactions.where((t) => t.id != id).toList(),
-    );
+    try {
+      final response = await _apiService.post(
+        ApiConfig.transactions,
+        data: transaction.toJson(),
+      );
+      final newTransaction = Transaction.fromJson(response.data['data']);
+      state = state.copyWith(
+        transactions: [newTransaction, ...state.transactions],
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Gagal menambah transaksi');
+    }
   }
 
   Future<void> updateTransaction(Transaction transaction) async {
-    state = state.copyWith(
-      transactions: state.transactions.map((t) {
-        return t.id == transaction.id ? transaction : t;
-      }).toList(),
-    );
+    try {
+      final response = await _apiService.put(
+        '${ApiConfig.transactions}/${transaction.id}',
+        data: transaction.toJson(),
+      );
+      final updated = Transaction.fromJson(response.data['data']);
+      state = state.copyWith(
+        transactions: state.transactions.map((t) {
+          return t.id == updated.id ? updated : t;
+        }).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Gagal mengubah transaksi');
+    }
+  }
+
+  Future<void> deleteTransaction(int id) async {
+    try {
+      await _apiService.delete('${ApiConfig.transactions}/$id');
+      state = state.copyWith(
+        transactions: state.transactions.where((t) => t.id != id).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Gagal menghapus transaksi');
+    }
   }
 }
 

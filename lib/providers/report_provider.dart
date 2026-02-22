@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/config/api_config.dart';
 
 class ReportState {
   final double totalIncome;
@@ -49,37 +51,59 @@ class ReportState {
 }
 
 class ReportNotifier extends StateNotifier<ReportState> {
+  final ApiService _apiService = ApiService();
+
   ReportNotifier() : super(const ReportState());
 
   Future<void> fetchReport() async {
     state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 500));
 
-    state = ReportState(
-      totalIncome: 7000000,
-      totalExpense: 2500000,
-      net: 4500000,
-      categoryBreakdown: {
-        'Makan': 850000,
-        'Transportasi': 200000,
-        'Belanja': 500000,
-        'Hiburan': 325000,
-        'Tagihan': 400000,
-        'Kesehatan': 225000,
-      },
-      categoryColors: {
-        'Makan': 0xFFFF6B6B,
-        'Transportasi': 0xFF4ECDC4,
-        'Belanja': 0xFFFFBE0B,
-        'Hiburan': 0xFFFF9671,
-        'Tagihan': 0xFF845EC2,
-        'Kesehatan': 0xFF00C9A7,
-      },
-      monthlyIncome: [5000000, 5500000, 6000000, 5000000, 7000000, 6500000],
-      monthlyExpense: [3000000, 2800000, 3500000, 2200000, 2500000, 3000000],
-      monthLabels: ['Sep', 'Okt', 'Nov', 'Des', 'Jan', 'Feb'],
-      isLoading: false,
-    );
+    try {
+      // Fetch both endpoints in parallel
+      final results = await Future.wait([
+        _apiService.get(ApiConfig.reportMonthly),
+        _apiService.get(ApiConfig.reportCategory),
+      ]);
+
+      final monthlyData = results[0].data;
+      final categoryData = results[1].data;
+
+      // Parse monthly trend
+      final monthlyIncomeRaw = monthlyData['monthly_income'] as List? ?? [];
+      final monthlyExpenseRaw = monthlyData['monthly_expense'] as List? ?? [];
+      final monthLabelsRaw = monthlyData['month_labels'] as List? ?? [];
+
+      // Parse category breakdown
+      final breakdownRaw =
+          categoryData['category_breakdown'] as Map<String, dynamic>? ?? {};
+      final colorsRaw =
+          categoryData['category_colors'] as Map<String, dynamic>? ?? {};
+
+      final categoryBreakdown = breakdownRaw.map(
+        (key, value) => MapEntry(key, (value as num).toDouble()),
+      );
+      final categoryColors = colorsRaw.map(
+        (key, value) => MapEntry(key, (value as num).toInt()),
+      );
+
+      state = ReportState(
+        totalIncome: (monthlyData['total_income'] as num?)?.toDouble() ?? 0,
+        totalExpense: (monthlyData['total_expense'] as num?)?.toDouble() ?? 0,
+        net: (monthlyData['net'] as num?)?.toDouble() ?? 0,
+        categoryBreakdown: categoryBreakdown,
+        categoryColors: categoryColors,
+        monthlyIncome: monthlyIncomeRaw
+            .map<double>((e) => (e as num).toDouble())
+            .toList(),
+        monthlyExpense: monthlyExpenseRaw
+            .map<double>((e) => (e as num).toDouble())
+            .toList(),
+        monthLabels: monthLabelsRaw.map<String>((e) => e.toString()).toList(),
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 }
 

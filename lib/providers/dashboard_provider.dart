@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
 import 'package:pencatat_keuangan/models/wallet.dart';
+import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/config/api_config.dart';
 
 class DashboardState {
   final double totalBalance;
@@ -44,119 +45,39 @@ class DashboardState {
 }
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
+  final ApiService _apiService = ApiService();
+
   DashboardNotifier() : super(const DashboardState());
 
   Future<void> fetchDashboard() async {
     state = state.copyWith(isLoading: true);
 
-    // Mock data
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final response = await _apiService.get(ApiConfig.dashboard);
+      final data = response.data;
 
-    final mockWallets = [
-      Wallet(
-        id: 1,
-        name: 'Dompet Tunai',
-        type: 'cash',
-        balance: 1250000,
-        icon: Icons.account_balance_wallet.codePoint,
-        color: 0xFF6C63FF,
-      ),
-      Wallet(
-        id: 2,
-        name: 'Bank BCA',
-        type: 'bank',
-        balance: 15400000,
-        icon: Icons.account_balance.codePoint,
-        color: 0xFF00C853,
-      ),
-      Wallet(
-        id: 3,
-        name: 'GoPay',
-        type: 'ewallet',
-        balance: 450000,
-        icon: Icons.payment.codePoint,
-        color: 0xFF2196F3,
-      ),
-    ];
+      final List transactionsJson = data['recent_transactions'] ?? [];
+      final List walletsJson = data['wallets'] ?? [];
 
-    final now = DateTime.now();
-    final mockTransactions = [
-      Transaction(
-        id: 1,
-        type: 'expense',
-        amount: 50000,
-        categoryId: 1,
-        walletId: 1,
-        note: 'Makan Siang',
-        date: now,
-        categoryName: 'Makan',
-        categoryIcon: Icons.restaurant.codePoint,
-        categoryColor: 0xFFFF6B6B,
-        walletName: 'Dompet Tunai',
-      ),
-      Transaction(
-        id: 2,
-        type: 'income',
-        amount: 5000000,
-        categoryId: 9,
-        walletId: 2,
-        note: 'Gaji Bulanan',
-        date: now.subtract(const Duration(days: 1)),
-        categoryName: 'Gaji',
-        categoryIcon: Icons.account_balance_wallet.codePoint,
-        categoryColor: 0xFF00C853,
-        walletName: 'Bank BCA',
-      ),
-      Transaction(
-        id: 3,
-        type: 'expense',
-        amount: 20000,
-        categoryId: 2,
-        walletId: 1,
-        note: 'Transportasi',
-        date: now.subtract(const Duration(days: 2)),
-        categoryName: 'Transportasi',
-        categoryIcon: Icons.directions_car.codePoint,
-        categoryColor: 0xFF4ECDC4,
-        walletName: 'Dompet Tunai',
-      ),
-      Transaction(
-        id: 4,
-        type: 'expense',
-        amount: 150000,
-        categoryId: 3,
-        walletId: 2,
-        note: 'Belanja Bulanan',
-        date: now.subtract(const Duration(days: 3)),
-        categoryName: 'Belanja',
-        categoryIcon: Icons.shopping_bag.codePoint,
-        categoryColor: 0xFFFFBE0B,
-        walletName: 'Bank BCA',
-      ),
-      Transaction(
-        id: 5,
-        type: 'expense',
-        amount: 35000,
-        categoryId: 5,
-        walletId: 3,
-        note: 'Nonton Film',
-        date: now.subtract(const Duration(days: 4)),
-        categoryName: 'Hiburan',
-        categoryIcon: Icons.movie.codePoint,
-        categoryColor: 0xFFFF9671,
-        walletName: 'GoPay',
-      ),
-    ];
+      final weeklyRaw = data['weekly_expenses'] as List? ?? [];
+      final weeklyExpenses = weeklyRaw
+          .map<double>((e) => (e as num).toDouble())
+          .toList();
 
-    state = DashboardState(
-      totalBalance: mockWallets.fold(0, (sum, w) => sum + w.balance),
-      monthlyIncome: 5000000,
-      monthlyExpense: 2500000,
-      weeklyExpenses: [120000, 85000, 200000, 50000, 175000, 90000, 65000],
-      recentTransactions: mockTransactions,
-      wallets: mockWallets,
-      isLoading: false,
-    );
+      state = DashboardState(
+        totalBalance: (data['total_balance'] as num?)?.toDouble() ?? 0,
+        monthlyIncome: (data['monthly_income'] as num?)?.toDouble() ?? 0,
+        monthlyExpense: (data['monthly_expense'] as num?)?.toDouble() ?? 0,
+        weeklyExpenses: weeklyExpenses,
+        recentTransactions: transactionsJson
+            .map((json) => Transaction.fromJson(json))
+            .toList(),
+        wallets: walletsJson.map((json) => Wallet.fromJson(json)).toList(),
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 }
 

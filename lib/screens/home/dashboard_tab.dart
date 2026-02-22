@@ -488,14 +488,50 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           ],
         ),
         const SizedBox(height: 8),
-        ...dashboard.recentTransactions
-            .take(5)
-            .map(
-              (t) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TransactionCard(transaction: t),
-              ),
+        if (dashboard.recentTransactions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.receipt_long_outlined,
+                  size: 56,
+                  color: AppColors.textSecondary.withValues(alpha: 0.4),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Belum ada transaksi',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tambahkan transaksi pertamamu',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...dashboard.recentTransactions
+              .take(5)
+              .map(
+                (t) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TransactionCard(transaction: t),
+                ),
+              ),
       ],
     );
   }

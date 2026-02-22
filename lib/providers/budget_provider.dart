@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/budget.dart';
+import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/config/api_config.dart';
 
 class BudgetState {
   final List<Budget> budgets;
@@ -37,6 +38,8 @@ class BudgetState {
 }
 
 class BudgetNotifier extends StateNotifier<BudgetState> {
+  final ApiService _apiService = ApiService();
+
   BudgetNotifier() : super(BudgetState());
 
   Future<void> fetchBudgets({int? month, int? year}) async {
@@ -45,46 +48,21 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       selectedMonth: month,
       selectedYear: year,
     );
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    state = state.copyWith(
-      budgets: [
-        Budget(
-          id: 1,
-          categoryId: 1,
-          amount: 1000000,
-          spent: 850000,
-          month: state.selectedMonth,
-          year: state.selectedYear,
-          categoryName: 'Makan',
-          categoryIcon: Icons.restaurant.codePoint,
-          categoryColor: 0xFFFF6B6B,
-        ),
-        Budget(
-          id: 2,
-          categoryId: 5,
-          amount: 500000,
-          spent: 325000,
-          month: state.selectedMonth,
-          year: state.selectedYear,
-          categoryName: 'Hiburan',
-          categoryIcon: Icons.movie.codePoint,
-          categoryColor: 0xFFFF9671,
-        ),
-        Budget(
-          id: 3,
-          categoryId: 2,
-          amount: 500000,
-          spent: 200000,
-          month: state.selectedMonth,
-          year: state.selectedYear,
-          categoryName: 'Transportasi',
-          categoryIcon: Icons.directions_car.codePoint,
-          categoryColor: 0xFF4ECDC4,
-        ),
-      ],
-      isLoading: false,
-    );
+    try {
+      final response = await _apiService.get(
+        ApiConfig.budgets,
+        queryParameters: {
+          'month': state.selectedMonth,
+          'year': state.selectedYear,
+        },
+      );
+      final List data = response.data['data'];
+      final budgets = data.map((json) => Budget.fromJson(json)).toList();
+      state = state.copyWith(budgets: budgets, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   void previousMonth() {
@@ -108,15 +86,39 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
   }
 
   Future<void> addBudget(Budget budget) async {
-    state = state.copyWith(budgets: [...state.budgets, budget]);
+    try {
+      final response = await _apiService.post(
+        ApiConfig.budgets,
+        data: {
+          'category_id': budget.categoryId,
+          'amount': budget.amount,
+          'month': state.selectedMonth,
+          'year': state.selectedYear,
+        },
+      );
+      final newBudget = Budget.fromJson(response.data['data']);
+      state = state.copyWith(budgets: [...state.budgets, newBudget]);
+    } catch (_) {}
   }
 
   Future<void> updateBudget(Budget budget) async {
-    state = state.copyWith(
-      budgets: state.budgets
-          .map((b) => b.id == budget.id ? budget : b)
-          .toList(),
-    );
+    try {
+      final response = await _apiService.put(
+        '${ApiConfig.budgets}/${budget.id}',
+        data: {
+          'category_id': budget.categoryId,
+          'amount': budget.amount,
+          'month': state.selectedMonth,
+          'year': state.selectedYear,
+        },
+      );
+      final updated = Budget.fromJson(response.data['data']);
+      state = state.copyWith(
+        budgets: state.budgets
+            .map((b) => b.id == updated.id ? updated : b)
+            .toList(),
+      );
+    } catch (_) {}
   }
 }
 

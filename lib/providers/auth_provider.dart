@@ -43,25 +43,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkAuth() async {
     state = state.copyWith(isLoading: true);
 
-    if (ApiConfig.useMockData) {
-      final token = await _apiService.getToken();
-      if (token != null) {
-        state = AuthState(
-          user: User(
-            id: 1,
-            name: 'Budi',
-            email: 'budi@email.com',
-            token: token,
-          ),
-          isAuthenticated: true,
-          isLoading: false,
-        );
-      } else {
-        state = const AuthState(isLoading: false);
-      }
-      return;
-    }
-
     try {
       final token = await _apiService.getToken();
       if (token != null) {
@@ -84,31 +65,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // Login
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-
-    if (ApiConfig.useMockData) {
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      if (email == 'budi@email.com' && password == 'password') {
-        const token = 'mock_token_123';
-        await _apiService.saveToken(token);
-        state = AuthState(
-          user: User(id: 1, name: 'Budi', email: email, token: token),
-          isAuthenticated: true,
-          isLoading: false,
-        );
-        return true;
-      } else {
-        // Accept any email/password for demo
-        const token = 'mock_token_123';
-        await _apiService.saveToken(token);
-        state = AuthState(
-          user: User(id: 1, name: 'User', email: email, token: token),
-          isAuthenticated: true,
-          isLoading: false,
-        );
-        return true;
-      }
-    }
 
     try {
       final response = await _apiService.post(
@@ -138,18 +94,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // Register
   Future<bool> register(String name, String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-
-    if (ApiConfig.useMockData) {
-      await Future.delayed(const Duration(milliseconds: 800));
-      const token = 'mock_token_123';
-      await _apiService.saveToken(token);
-      state = AuthState(
-        user: User(id: 1, name: name, email: email, token: token),
-        isAuthenticated: true,
-        isLoading: false,
-      );
-      return true;
-    }
 
     try {
       final response = await _apiService.post(
@@ -185,11 +129,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
 
-    if (!ApiConfig.useMockData) {
-      try {
-        await _apiService.post(ApiConfig.logout);
-      } catch (_) {}
-    }
+    try {
+      await _apiService.post(ApiConfig.logout);
+    } catch (_) {}
 
     await _apiService.clearToken();
     state = const AuthState();

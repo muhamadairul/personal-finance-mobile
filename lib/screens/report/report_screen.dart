@@ -150,7 +150,42 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   Widget _buildCategoryPieChart(ReportState report) {
-    if (report.categoryBreakdown.isEmpty) return const SizedBox.shrink();
+    if (report.categoryBreakdown.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.donut_large_outlined,
+              size: 56,
+              color: AppColors.textSecondary.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Belum ada data pengeluaran',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Data akan muncul setelah ada transaksi',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final entries = report.categoryBreakdown.entries.toList();
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
@@ -231,7 +266,42 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   Widget _buildMonthlyBarChart(ReportState report) {
-    if (report.monthlyIncome.isEmpty) return const SizedBox.shrink();
+    if (report.monthlyIncome.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.bar_chart_outlined,
+              size: 56,
+              color: AppColors.textSecondary.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Belum ada data tren',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tren akan muncul seiring berjalannya waktu',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final maxVal = [
       ...report.monthlyIncome,

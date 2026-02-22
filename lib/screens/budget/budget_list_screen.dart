@@ -215,12 +215,53 @@ class _BudgetListScreenState extends ConsumerState<BudgetListScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  ...state.budgets.map((budget) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: BudgetProgressBar(budget: budget),
-                    );
-                  }),
+                  if (state.budgets.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.pie_chart_outline,
+                            size: 56,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Belum ada anggaran',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Buat anggaran untuk mengontrol\npengeluaranmu bulan ini',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...state.budgets.map((budget) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: BudgetProgressBar(budget: budget),
+                      );
+                    }),
                   const SizedBox(height: 100),
                 ],
               ),
