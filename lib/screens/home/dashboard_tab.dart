@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
+import 'package:pencatat_keuangan/screens/home/home_screen.dart';
 import 'package:pencatat_keuangan/widgets/transaction_card.dart';
 
 final currencyFormat = NumberFormat.currency(
@@ -207,10 +208,13 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.info_outline,
+                child: IconButton(
+                  icon: const Icon(Icons.info_outline),
                   color: Colors.white,
-                  size: 18,
+                  iconSize: 18,
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/budget');
+                  },
                 ),
               ),
             ],
@@ -469,7 +473,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                ref.read(currentTabProvider.notifier).state = 1;
+              },
               child: Text(
                 'Lihat Semua',
                 style: GoogleFonts.poppins(

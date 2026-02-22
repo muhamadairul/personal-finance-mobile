@@ -7,6 +7,7 @@ import 'package:pencatat_keuangan/screens/auth/register_screen.dart';
 import 'package:pencatat_keuangan/screens/home/home_screen.dart';
 import 'package:pencatat_keuangan/screens/transaction/transaction_form_screen.dart';
 import 'package:pencatat_keuangan/screens/budget/budget_list_screen.dart';
+import 'package:pencatat_keuangan/screens/transaction/transaction_list_screen.dart';
 
 // Theme mode provider
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
@@ -30,6 +31,7 @@ class PencatatKeuanganApp extends ConsumerWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
+        '/transaction': (context) => const TransactionListScreen(),
         '/transaction/add': (context) => const TransactionFormScreen(),
         '/budget': (context) => const BudgetListScreen(),
       },
