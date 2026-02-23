@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
-import 'package:pencatat_keuangan/config/constants.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
+import 'package:pencatat_keuangan/providers/category_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
 
@@ -18,18 +18,38 @@ class TransactionFormScreen extends ConsumerStatefulWidget {
 
 class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   String _type = 'expense';
-  int _selectedCategoryId = 1;
+  int? _selectedCategoryId;
   int _selectedWalletId = 1;
   DateTime _selectedDate = DateTime.now();
   final _amountController = TextEditingController(text: '0');
   final _noteController = TextEditingController();
+  bool _isEditing = false;
+  Transaction? _editingTransaction;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(walletProvider.notifier).fetchWallets();
+      ref.read(categoryProvider.notifier).fetchCategories();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tx = ModalRoute.of(context)?.settings.arguments as Transaction?;
+    if (tx != null && !_isEditing) {
+      _isEditing = true;
+      _editingTransaction = tx;
+      _type = tx.type;
+      _amountController.text = tx.amount.toStringAsFixed(0);
+      _noteController.text = tx.note ?? '';
+      _selectedCategoryId = tx.categoryId;
+      _selectedWalletId = tx.walletId;
+      _selectedDate = tx.date;
+    }
   }
 
   @override
@@ -37,12 +57,6 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
-  }
-
-  List<Map<String, dynamic>> get _categories {
-    return _type == 'expense'
-        ? DefaultCategories.expense
-        : DefaultCategories.income;
   }
 
   Future<void> _save() async {
@@ -58,23 +72,59 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       return;
     }
 
+    if (_selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pilih kategori terlebih dahulu'),
+          backgroundColor: AppColors.expense,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
     final transaction = Transaction(
-      id: 0,
+      id: _editingTransaction?.id ?? 0,
       type: _type,
       amount: amount,
-      categoryId: _selectedCategoryId,
+      categoryId: _selectedCategoryId!,
       walletId: _selectedWalletId,
       note: _noteController.text.isEmpty ? null : _noteController.text,
       date: _selectedDate,
     );
 
-    await ref.read(transactionProvider.notifier).addTransaction(transaction);
-    if (mounted) Navigator.of(context).pop();
+    try {
+      if (_isEditing) {
+        await ref
+            .read(transactionProvider.notifier)
+            .updateTransaction(transaction);
+      } else {
+        await ref
+            .read(transactionProvider.notifier)
+            .addTransaction(transaction);
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan transaksi'),
+            backgroundColor: AppColors.expense,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletProvider);
+    final categoryState = ref.watch(categoryProvider);
+    final categories = _type == 'expense'
+        ? categoryState.expenseCategories
+        : categoryState.incomeCategories;
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: '',
@@ -91,7 +141,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Tambah Transaksi',
+          _isEditing ? 'Edit Transaksi' : 'Tambah Transaksi',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -99,12 +149,6 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -124,7 +168,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     child: GestureDetector(
                       onTap: () => setState(() {
                         _type = 'expense';
-                        _selectedCategoryId = 1;
+                        _selectedCategoryId = null;
                       }),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -159,7 +203,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     child: GestureDetector(
                       onTap: () => setState(() {
                         _type = 'income';
-                        _selectedCategoryId = 9;
+                        _selectedCategoryId = null;
                       }),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -256,9 +300,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.pushNamed(context, '/categories'),
                   child: Text(
-                    'Lihat Semua',
+                    'Kelola',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: AppColors.primary,
@@ -268,65 +312,88 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 90,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = cat['id'] == _selectedCategoryId;
-                  final iconData = cat['icon'] as IconData;
-                  return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedCategoryId = cat['id'] as int),
-                    child: Container(
-                      width: 76,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.backgroundLight,
-                              borderRadius: BorderRadius.circular(16),
-                              border: isSelected
-                                  ? null
-                                  : Border.all(color: AppColors.border),
+            if (categoryState.isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (categories.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Belum ada kategori. Tap "Kelola" untuk menambah.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 90,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final cat = categories[index];
+                    final isSelected = cat.id == _selectedCategoryId;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedCategoryId = cat.id),
+                      child: Container(
+                        width: 76,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? cat.colorValue
+                                    : cat.colorValue.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(16),
+                                border: isSelected
+                                    ? null
+                                    : Border.all(color: AppColors.border),
+                              ),
+                              child: Icon(
+                                cat.icon,
+                                color: isSelected
+                                    ? Colors.white
+                                    : cat.colorValue,
+                                size: 24,
+                              ),
                             ),
-                            child: Icon(
-                              iconData,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                              size: 24,
+                            const SizedBox(height: 6),
+                            Text(
+                              cat.name,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            cat['name'] as String,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
             const SizedBox(height: 20),
             // Wallet
             Text(
@@ -497,10 +564,21 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           child: SizedBox(
             height: 56,
             child: ElevatedButton.icon(
-              onPressed: _save,
-              icon: const Icon(Icons.save, color: Colors.white),
+              onPressed: _isSaving ? null : _save,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save, color: Colors.white),
               label: Text(
-                'Simpan Transaksi',
+                _isSaving
+                    ? 'Menyimpan...'
+                    : (_isEditing ? 'Perbarui Transaksi' : 'Simpan Transaksi'),
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -509,6 +587,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withValues(
+                  alpha: 0.6,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

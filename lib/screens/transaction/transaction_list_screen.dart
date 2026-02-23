@@ -155,7 +155,18 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                             ),
                             child: TransactionCard(
                               transaction: tx,
-                              onTap: () {},
+                              onTap: () async {
+                                final result = await Navigator.pushNamed(
+                                  context,
+                                  '/transaction/detail',
+                                  arguments: tx,
+                                );
+                                if (result == true) {
+                                  ref
+                                      .read(transactionProvider.notifier)
+                                      .fetchTransactions();
+                                }
+                              },
                             ),
                           ),
                         );

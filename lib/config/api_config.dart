@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://b4df-203-190-46-74.ngrok-free.app/api';
+  static const String baseUrl = 'https://bdfc-203-190-46-74.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';

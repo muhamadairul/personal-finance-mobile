@@ -120,6 +120,15 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       );
     } catch (_) {}
   }
+
+  Future<void> deleteBudget(int id) async {
+    try {
+      await _apiService.delete('${ApiConfig.budgets}/$id');
+      state = state.copyWith(
+        budgets: state.budgets.where((b) => b.id != id).toList(),
+      );
+    } catch (_) {}
+  }
 }
 
 final budgetProvider = StateNotifierProvider<BudgetNotifier, BudgetState>((

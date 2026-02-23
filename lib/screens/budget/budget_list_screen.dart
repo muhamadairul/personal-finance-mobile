@@ -56,7 +56,15 @@ class _BudgetListScreenState extends ConsumerState<BudgetListScreen> {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () async {
+              final result = await Navigator.pushNamed(context, '/budget/form');
+              if (result == true) {
+                ref.read(budgetProvider.notifier).fetchBudgets();
+              }
+            },
+          ),
         ],
       ),
       body: state.isLoading
@@ -259,7 +267,71 @@ class _BudgetListScreenState extends ConsumerState<BudgetListScreen> {
                     ...state.budgets.map((budget) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: BudgetProgressBar(budget: budget),
+                        child: Dismissible(
+                          key: Key('budget-${budget.id}'),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: AppColors.expense,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ),
+                          confirmDismiss: (direction) async {
+                            return await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Text('Hapus Budget'),
+                                content: const Text(
+                                  'Apakah Anda yakin ingin menghapus budget ini?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Batal'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text(
+                                      'Hapus',
+                                      style: TextStyle(
+                                        color: AppColors.expense,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          onDismissed: (direction) {
+                            ref
+                                .read(budgetProvider.notifier)
+                                .deleteBudget(budget.id);
+                          },
+                          child: GestureDetector(
+                            onTap: () async {
+                              final result = await Navigator.pushNamed(
+                                context,
+                                '/budget/form',
+                                arguments: budget,
+                              );
+                              if (result == true) {
+                                ref
+                                    .read(budgetProvider.notifier)
+                                    .fetchBudgets();
+                              }
+                            },
+                            child: BudgetProgressBar(budget: budget),
+                          ),
+                        ),
                       );
                     }),
                   const SizedBox(height: 100),

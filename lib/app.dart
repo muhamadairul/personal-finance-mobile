@@ -6,8 +6,14 @@ import 'package:pencatat_keuangan/screens/auth/login_screen.dart';
 import 'package:pencatat_keuangan/screens/auth/register_screen.dart';
 import 'package:pencatat_keuangan/screens/home/home_screen.dart';
 import 'package:pencatat_keuangan/screens/transaction/transaction_form_screen.dart';
+import 'package:pencatat_keuangan/screens/transaction/transaction_detail_screen.dart';
 import 'package:pencatat_keuangan/screens/budget/budget_list_screen.dart';
+import 'package:pencatat_keuangan/screens/budget/budget_form_screen.dart';
 import 'package:pencatat_keuangan/screens/transaction/transaction_list_screen.dart';
+import 'package:pencatat_keuangan/screens/category/category_list_screen.dart';
+import 'package:pencatat_keuangan/screens/category/category_form_screen.dart';
+import 'package:pencatat_keuangan/screens/wallet/wallet_list_screen.dart';
+import 'package:pencatat_keuangan/screens/wallet/wallet_form_screen.dart';
 
 // Theme mode provider
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
@@ -33,7 +39,14 @@ class PencatatKeuanganApp extends ConsumerWidget {
         '/home': (context) => const HomeScreen(),
         '/transaction': (context) => const TransactionListScreen(),
         '/transaction/add': (context) => const TransactionFormScreen(),
+        '/transaction/form': (context) => const TransactionFormScreen(),
+        '/transaction/detail': (context) => const TransactionDetailScreen(),
         '/budget': (context) => const BudgetListScreen(),
+        '/budget/form': (context) => const BudgetFormScreen(),
+        '/categories': (context) => const CategoryListScreen(),
+        '/categories/form': (context) => const CategoryFormScreen(),
+        '/wallets': (context) => const WalletListScreen(),
+        '/wallets/form': (context) => const WalletFormScreen(),
       },
     );
   }
