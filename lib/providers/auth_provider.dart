@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/user.dart';
@@ -121,6 +122,43 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         error: 'Registrasi gagal. Silakan coba lagi.',
       );
+      return false;
+    }
+  }
+
+  // Update Profile
+  Future<bool> updateProfile(String name) async {
+    try {
+      final response = await _apiService.put(
+        ApiConfig.updateProfile,
+        data: {'name': name},
+      );
+
+      final updatedUser = User.fromJson(response.data['data']);
+      state = state.copyWith(
+        user: updatedUser.copyWith(token: state.user?.token),
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Upload Photo
+  Future<bool> uploadPhoto(File image) async {
+    try {
+      final response = await _apiService.uploadFile(
+        ApiConfig.uploadPhoto,
+        image,
+        fieldName: 'photo',
+      );
+
+      final updatedUser = User.fromJson(response.data['data']);
+      state = state.copyWith(
+        user: updatedUser.copyWith(token: state.user?.token),
+      );
+      return true;
+    } catch (e) {
       return false;
     }
   }

@@ -4,7 +4,7 @@ import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/screens/home/dashboard_tab.dart';
 import 'package:pencatat_keuangan/screens/transaction/transaction_list_screen.dart';
 import 'package:pencatat_keuangan/screens/report/report_screen.dart';
-import 'package:pencatat_keuangan/screens/settings/settings_screen.dart';
+import 'package:pencatat_keuangan/screens/profile/profile_screen.dart';
 
 final currentTabProvider = StateProvider<int>((ref) => 0);
 
@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
       const DashboardTab(),
       const TransactionListScreen(),
       const ReportScreen(),
-      const SettingsScreen(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
@@ -82,13 +82,7 @@ class HomeScreen extends ConsumerWidget {
                 Icons.pie_chart_rounded,
                 'Laporan',
               ),
-              _buildNavItem(
-                context,
-                ref,
-                3,
-                Icons.settings_rounded,
-                'Pengaturan',
-              ),
+              _buildNavItem(context, ref, 3, Icons.person_rounded, 'Profil'),
             ],
           ),
         ),

@@ -1,5 +1,6 @@
 class ApiConfig {
-  static const String baseUrl = 'https://bdfc-203-190-46-74.ngrok-free.app/api';
+  static const String baseUrl =
+      'https://db28-103-163-103-209.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
@@ -29,4 +30,8 @@ class ApiConfig {
   // Export
   static const String exportCsv = '/export/csv';
   static const String exportPdf = '/export/pdf';
+
+  // Profile
+  static const String updateProfile = '/user/profile';
+  static const String uploadPhoto = '/user/photo';
 }

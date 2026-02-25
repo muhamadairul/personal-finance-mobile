@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pencatat_keuangan/config/api_config.dart';
@@ -70,5 +71,45 @@ class ApiService {
 
   Future<Response> delete(String path) {
     return _dio.delete(path);
+  }
+
+  // File upload (multipart)
+  Future<Response> uploadFile(
+    String path,
+    File file, {
+    String fieldName = 'photo',
+  }) async {
+    final formData = FormData.fromMap({
+      fieldName: await MultipartFile.fromFile(
+        file.path,
+        filename: file.path.split(Platform.pathSeparator).last,
+      ),
+    });
+    return _dio.post(
+      path,
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+  }
+
+  // File download
+  Future<Response> downloadFile(
+    String path,
+    String savePath, {
+    Map<String, dynamic>? queryParams,
+  }) {
+    return _dio.download(path, savePath, queryParameters: queryParams);
+  }
+
+  // Get raw bytes (for export)
+  Future<Response<List<int>>> getBytes(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) {
+    return _dio.get<List<int>>(
+      path,
+      queryParameters: queryParameters,
+      options: Options(responseType: ResponseType.bytes),
+    );
   }
 }

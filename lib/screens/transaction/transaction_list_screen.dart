@@ -4,7 +4,10 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
+import 'package:pencatat_keuangan/providers/report_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
+import 'package:pencatat_keuangan/providers/wallet_provider.dart';
 import 'package:pencatat_keuangan/widgets/transaction_card.dart';
 
 class TransactionListScreen extends ConsumerStatefulWidget {
@@ -144,6 +147,16 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                                     ref
                                         .read(transactionProvider.notifier)
                                         .deleteTransaction(tx.id);
+                                    // Auto-refresh related data
+                                    ref
+                                        .read(dashboardProvider.notifier)
+                                        .fetchDashboard();
+                                    ref
+                                        .read(walletProvider.notifier)
+                                        .fetchWallets();
+                                    ref
+                                        .read(reportProvider.notifier)
+                                        .fetchReport();
                                   },
                                   backgroundColor: AppColors.expense,
                                   foregroundColor: Colors.white,

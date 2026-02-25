@@ -56,7 +56,7 @@ class Transaction {
       'category_id': categoryId,
       'wallet_id': walletId,
       'note': note,
-      'date': date.toIso8601String().split('T').first,
+      'date': date.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
     };
   }

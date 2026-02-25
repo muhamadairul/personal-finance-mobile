@@ -47,49 +47,53 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       ),
       body: report.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  // Summary Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryCard(
-                          'Pemasukan',
-                          report.totalIncome,
-                          AppColors.income,
-                          Icons.arrow_upward,
+          : RefreshIndicator(
+              onRefresh: () => ref.read(reportProvider.notifier).fetchReport(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    // Summary Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryCard(
+                            'Pemasukan',
+                            report.totalIncome,
+                            AppColors.income,
+                            Icons.arrow_upward,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSummaryCard(
-                          'Pengeluaran',
-                          report.totalExpense,
-                          AppColors.expense,
-                          Icons.arrow_downward,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSummaryCard(
+                            'Pengeluaran',
+                            report.totalExpense,
+                            AppColors.expense,
+                            Icons.arrow_downward,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSummaryCard(
-                    'Sisa Bersih',
-                    report.net,
-                    AppColors.primary,
-                    Icons.account_balance_wallet,
-                  ),
-                  const SizedBox(height: 24),
-                  // Pie Chart
-                  _buildCategoryPieChart(report),
-                  const SizedBox(height: 24),
-                  // Bar Chart
-                  _buildMonthlyBarChart(report),
-                  const SizedBox(height: 100),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSummaryCard(
+                      'Sisa Bersih',
+                      report.net,
+                      AppColors.primary,
+                      Icons.account_balance_wallet,
+                    ),
+                    const SizedBox(height: 24),
+                    // Pie Chart
+                    _buildCategoryPieChart(report),
+                    const SizedBox(height: 24),
+                    // Bar Chart
+                    _buildMonthlyBarChart(report),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
     );

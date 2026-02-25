@@ -74,6 +74,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 
   Widget _buildHeader(String userName) {
+    final authState = ref.watch(authProvider);
+    final photoUrl = authState.user?.photoUrl;
+
     return Row(
       children: [
         Container(
@@ -83,7 +86,22 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(Icons.person, color: AppColors.primary, size: 24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: photoUrl != null
+                ? Image.network(
+                    photoUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.person,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  )
+                : const Icon(Icons.person, color: AppColors.primary, size: 24),
+          ),
         ),
         const SizedBox(width: 12),
         Column(

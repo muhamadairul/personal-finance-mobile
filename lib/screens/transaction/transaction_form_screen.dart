@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
 import 'package:pencatat_keuangan/providers/category_provider.dart';
+import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
+import 'package:pencatat_keuangan/providers/report_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
 
@@ -21,6 +23,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   int? _selectedCategoryId;
   int _selectedWalletId = 1;
   DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
   final _amountController = TextEditingController(text: '0');
   final _noteController = TextEditingController();
   bool _isEditing = false;
@@ -49,6 +52,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       _selectedCategoryId = tx.categoryId;
       _selectedWalletId = tx.walletId;
       _selectedDate = tx.date;
+      _selectedTime = TimeOfDay(hour: tx.date.hour, minute: tx.date.minute);
     }
   }
 
@@ -82,7 +86,40 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       return;
     }
 
+    // Validate balance for expense
+    if (_type == 'expense') {
+      final wallets = ref.read(walletProvider).wallets;
+      final selectedWallet = wallets.firstWhere(
+        (w) => w.id == _selectedWalletId,
+        orElse: () => wallets.first,
+      );
+      // For editing, add back the original amount to get effective balance
+      final effectiveBalance =
+          _isEditing && _editingTransaction?.walletId == _selectedWalletId
+          ? selectedWallet.balance + (_editingTransaction?.amount ?? 0)
+          : selectedWallet.balance;
+      if (amount > effectiveBalance) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Saldo dompet tidak mencukupi. Saldo tersedia: Rp ${NumberFormat('#,###', 'id_ID').format(effectiveBalance)}',
+            ),
+            backgroundColor: AppColors.expense,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
+
+    final combinedDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
 
     final transaction = Transaction(
       id: _editingTransaction?.id ?? 0,
@@ -91,7 +128,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       categoryId: _selectedCategoryId!,
       walletId: _selectedWalletId,
       note: _noteController.text.isEmpty ? null : _noteController.text,
-      date: _selectedDate,
+      date: combinedDateTime,
     );
 
     try {
@@ -104,15 +141,19 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
             .read(transactionProvider.notifier)
             .addTransaction(transaction);
       }
+      // Auto-refresh all related data
+      ref.read(dashboardProvider.notifier).fetchDashboard();
+      ref.read(walletProvider.notifier).fetchWallets();
+      ref.read(reportProvider.notifier).fetchReport();
       if (mounted) Navigator.of(context).pop(true);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
+        final errorMsg = e.toString().contains('422')
+            ? 'Saldo dompet tidak mencukupi'
+            : 'Gagal menyimpan transaksi';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menyimpan transaksi'),
-            backgroundColor: AppColors.expense,
-          ),
+          SnackBar(content: Text(errorMsg), backgroundColor: AppColors.expense),
         );
       }
     }
@@ -512,6 +553,64 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                             'EEEE, d MMMM yyyy',
                             'id',
                           ).format(_selectedDate),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Time
+            GestureDetector(
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: _selectedTime,
+                );
+                if (picked != null) {
+                  setState(() => _selectedTime = picked);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'WAKTU',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          _selectedTime.format(context),
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

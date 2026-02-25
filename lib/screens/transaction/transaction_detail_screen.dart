@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
+import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
+import 'package:pencatat_keuangan/providers/report_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
+import 'package:pencatat_keuangan/providers/wallet_provider.dart';
 
 class TransactionDetailScreen extends ConsumerWidget {
   const TransactionDetailScreen({super.key});
@@ -91,6 +94,10 @@ class TransactionDetailScreen extends ConsumerWidget {
                 await ref
                     .read(transactionProvider.notifier)
                     .deleteTransaction(transaction.id);
+                // Auto-refresh all related data
+                ref.read(dashboardProvider.notifier).fetchDashboard();
+                ref.read(walletProvider.notifier).fetchWallets();
+                ref.read(reportProvider.notifier).fetchReport();
                 if (context.mounted) Navigator.pop(context, true);
               }
             },
@@ -205,7 +212,7 @@ class TransactionDetailScreen extends ConsumerWidget {
                     Icons.calendar_today_outlined,
                     'Tanggal',
                     DateFormat(
-                      'EEEE, d MMMM yyyy',
+                      'EEEE, d MMMM yyyy • HH:mm',
                       'id',
                     ).format(transaction.date),
                     AppColors.primary,
