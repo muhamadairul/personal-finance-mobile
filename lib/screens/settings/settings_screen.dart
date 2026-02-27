@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -344,17 +346,58 @@ class SettingsScreen extends ConsumerWidget {
     int year,
   ) async {
     try {
-      // Ask user to pick save location first
+      debugPrint('[Export] ===== Memulai ekspor $type =====');
+      debugPrint('[Export] Bulan: $month, Tahun: $year');
+
+      // Step 1: Download data from API first
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Mengunduh file $type...'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final apiService = ref.read(_apiServiceProvider);
+      final endpoint = type == 'xlsx' ? '/export/excel' : '/export/pdf';
+      debugPrint('[Export] Memanggil API: $endpoint');
+
+      final response = await apiService.getBytes(
+        endpoint,
+        queryParameters: {'month': month, 'year': year},
+      );
+
+      debugPrint('[Export] Response status: ${response.statusCode}');
+      debugPrint(
+        '[Export] Response data size: ${response.data?.length ?? 0} bytes',
+      );
+
+      if (response.data == null || response.data!.isEmpty) {
+        debugPrint('[Export] ERROR: Response data kosong!');
+        throw Exception('Server mengembalikan data kosong');
+      }
+
+      final bytes = response.data!;
       final fileName = 'transaksi_${year}_$month.$type';
+
+      // Step 2: Open file picker with bytes (required on Android/iOS)
+      debugPrint(
+        '[Export] Membuka file picker untuk: $fileName (${bytes.length} bytes)',
+      );
+
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Simpan file $type',
         fileName: fileName,
         type: type == 'xlsx' ? FileType.any : FileType.custom,
         allowedExtensions: type == 'xlsx' ? null : [type],
+        bytes: Uint8List.fromList(bytes),
       );
 
+      debugPrint('[Export] File picker result: $savePath');
+
       if (savePath == null) {
-        // User cancelled
+        debugPrint('[Export] User membatalkan file picker');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -366,26 +409,7 @@ class SettingsScreen extends ConsumerWidget {
         return;
       }
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Mengunduh file $type...'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
-
-      final apiService = ref.read(_apiServiceProvider);
-      final endpoint = type == 'xlsx' ? '/export/excel' : '/export/pdf';
-
-      final response = await apiService.getBytes(
-        endpoint,
-        queryParameters: {'month': month, 'year': year},
-      );
-
-      // Write directly to user-chosen path
-      final file = File(savePath);
-      await file.writeAsBytes(response.data!);
+      debugPrint('[Export] File berhasil disimpan ke: $savePath');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -396,12 +420,48 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+
+      debugPrint('[Export] ===== Ekspor $type selesai =====');
+    } on DioException catch (e) {
+      debugPrint('[Export] DioException: ${e.type}');
+      debugPrint('[Export] DioException message: ${e.message}');
+      debugPrint('[Export] DioException status: ${e.response?.statusCode}');
+      debugPrint('[Export] DioException response: ${e.response?.data}');
+
+      // Try to decode error message from server
+      String errorMsg = 'Gagal mengunduh file $type';
+      if (e.response?.data != null) {
+        try {
+          final body = e.response!.data;
+          if (body is Map && body.containsKey('error')) {
+            errorMsg = '$errorMsg: ${body['error']}';
+          } else if (body is List<int>) {
+            final decoded = String.fromCharCodes(body);
+            debugPrint('[Export] Response body (decoded): $decoded');
+            errorMsg = '$errorMsg (status: ${e.response?.statusCode})';
+          }
+        } catch (_) {}
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengunduh file $type'),
+            content: Text(errorMsg),
             backgroundColor: AppColors.expense,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[Export] ERROR: $e');
+      debugPrint('[Export] Stack trace: $stackTrace');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengunduh file $type: $e'),
+            backgroundColor: AppColors.expense,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

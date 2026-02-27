@@ -109,7 +109,11 @@ class ApiService {
     return _dio.get<List<int>>(
       path,
       queryParameters: queryParameters,
-      options: Options(responseType: ResponseType.bytes),
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': '*/*'},
+        receiveTimeout: const Duration(seconds: 60),
+      ),
     );
   }
 }
