@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/services/api_service.dart';
 
@@ -276,11 +276,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 title: Text(
-                  'CSV',
+                  'Excel',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  'Spreadsheet format',
+                  'Format spreadsheet (.xlsx)',
                   style: GoogleFonts.poppins(fontSize: 12),
                 ),
                 onTap: () {
@@ -288,7 +288,7 @@ class SettingsScreen extends ConsumerWidget {
                   _downloadExport(
                     context,
                     ref,
-                    'csv',
+                    'xlsx',
                     selectedMonth,
                     selectedYear,
                   );
@@ -314,7 +314,7 @@ class SettingsScreen extends ConsumerWidget {
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  'Document format',
+                  'Format dokumen (.pdf)',
                   style: GoogleFonts.poppins(fontSize: 12),
                 ),
                 onTap: () {
@@ -344,35 +344,53 @@ class SettingsScreen extends ConsumerWidget {
     int year,
   ) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Mengunduh file $type...'),
-          duration: const Duration(seconds: 1),
-        ),
+      // Ask user to pick save location first
+      final fileName = 'transaksi_${year}_$month.$type';
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Simpan file $type',
+        fileName: fileName,
+        type: type == 'xlsx' ? FileType.any : FileType.custom,
+        allowedExtensions: type == 'xlsx' ? null : [type],
       );
 
+      if (savePath == null) {
+        // User cancelled
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ekspor dibatalkan'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Mengunduh file $type...'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+
       final apiService = ref.read(_apiServiceProvider);
-      final endpoint = type == 'csv' ? '/export/csv' : '/export/pdf';
+      final endpoint = type == 'xlsx' ? '/export/excel' : '/export/pdf';
 
       final response = await apiService.getBytes(
         endpoint,
         queryParameters: {'month': month, 'year': year},
       );
 
-      // Get downloads directory
-      final directory = await _getDownloadDirectory();
-      final fileName = 'transaksi_${year}_$month.$type';
-      final filePath = '${directory.path}/$fileName';
-
-      print(filePath);
-
-      final file = File(filePath);
+      // Write directly to user-chosen path
+      final file = File(savePath);
       await file.writeAsBytes(response.data!);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('File tersimpan: $fileName'),
+            content: Text('File $fileName berhasil disimpan!'),
             backgroundColor: AppColors.income,
             duration: const Duration(seconds: 3),
           ),
@@ -388,15 +406,6 @@ class SettingsScreen extends ConsumerWidget {
         );
       }
     }
-  }
-
-  Future<Directory> _getDownloadDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final exportDir = Directory('${directory.path}/exports');
-    if (!exportDir.existsSync()) {
-      exportDir.createSync(recursive: true);
-    }
-    return exportDir;
   }
 }
 

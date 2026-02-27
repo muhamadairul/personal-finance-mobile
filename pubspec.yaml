@@ -32,9 +32,7 @@ dependencies:
 
   # File & Export
   path_provider: ^2.1.5
-  csv: ^6.0.0
-  pdf: ^3.11.2
-  printing: ^5.13.4
+  file_picker: ^8.1.7
 
   # UI Enhancements
   shimmer: ^3.0.0
