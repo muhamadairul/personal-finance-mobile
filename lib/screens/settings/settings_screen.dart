@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -52,12 +54,30 @@ class SettingsScreen extends ConsumerWidget {
             // Data Section
             _sectionTitle('DATA'),
             const SizedBox(height: 12),
-            _settingsTile(
-              icon: Icons.file_download_outlined,
-              color: const Color(0xFF2196F3),
-              title: 'Ekspor Data',
-              subtitle: 'Unduh data transaksi Anda',
-              onTap: () => _showExportSheet(context, ref),
+            Builder(
+              builder: (context) {
+                final isPro = ref.watch(authProvider).user?.isPro ?? false;
+                return _settingsTile(
+                  icon: Icons.file_download_outlined,
+                  color: const Color(0xFF2196F3),
+                  title: 'Ekspor Data',
+                  subtitle: 'Unduh data transaksi Anda',
+                  onTap: () {
+                    if (!isPro) {
+                      showUpgradeDialog(context);
+                      return;
+                    }
+                    _showExportSheet(context, ref);
+                  },
+                  trailing: !isPro
+                      ? const Icon(
+                          Icons.lock,
+                          size: 16,
+                          color: Color(0xFFFFD700),
+                        )
+                      : null,
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -112,6 +132,7 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -144,9 +165,12 @@ class SettingsScreen extends ConsumerWidget {
             color: AppColors.textSecondary,
           ),
         ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textSecondary,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (trailing != null) ...[trailing, const SizedBox(width: 4)],
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
         ),
         onTap: onTap,
       ),
