@@ -4,6 +4,10 @@ class User {
   final String email;
   final String? token;
   final String? photoUrl;
+  final String? phone;
+  final String? address;
+  final DateTime? dateOfBirth;
+  final String? gender;
   final bool isPro;
   final DateTime? subscriptionUntil;
 
@@ -13,6 +17,10 @@ class User {
     required this.email,
     this.token,
     this.photoUrl,
+    this.phone,
+    this.address,
+    this.dateOfBirth,
+    this.gender,
     this.isPro = false,
     this.subscriptionUntil,
   });
@@ -24,6 +32,12 @@ class User {
       email: json['email'] as String,
       token: json['token'] as String?,
       photoUrl: json['photo_url'] as String?,
+      phone: json['phone'] as String?,
+      address: json['address'] as String?,
+      dateOfBirth: json['date_of_birth'] != null
+          ? DateTime.tryParse(json['date_of_birth'] as String)
+          : null,
+      gender: json['gender'] as String?,
       isPro: json['is_pro'] as bool? ?? false,
       subscriptionUntil: json['subscription_until'] != null
           ? DateTime.tryParse(json['subscription_until'] as String)
@@ -38,6 +52,10 @@ class User {
       'email': email,
       'token': token,
       'photo_url': photoUrl,
+      'phone': phone,
+      'address': address,
+      'date_of_birth': dateOfBirth?.toIso8601String().split('T').first,
+      'gender': gender,
       'is_pro': isPro,
       'subscription_until': subscriptionUntil?.toIso8601String(),
     };
@@ -49,6 +67,10 @@ class User {
     String? email,
     String? token,
     String? photoUrl,
+    String? phone,
+    String? address,
+    DateTime? dateOfBirth,
+    String? gender,
     bool? isPro,
     DateTime? subscriptionUntil,
   }) {
@@ -58,6 +80,10 @@ class User {
       email: email ?? this.email,
       token: token ?? this.token,
       photoUrl: photoUrl ?? this.photoUrl,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
       isPro: isPro ?? this.isPro,
       subscriptionUntil: subscriptionUntil ?? this.subscriptionUntil,
     );

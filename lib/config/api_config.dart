@@ -1,6 +1,5 @@
 class ApiConfig {
-  static const String baseUrl =
-      'https://6948-103-93-93-123.ngrok-free.app/api';
+  static const String baseUrl = 'https://6948-103-93-93-123.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
@@ -34,4 +33,5 @@ class ApiConfig {
   // Profile
   static const String updateProfile = '/user/profile';
   static const String uploadPhoto = '/user/photo';
+  static const String deletePhoto = '/user/photo';
 }

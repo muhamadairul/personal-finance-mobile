@@ -126,12 +126,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // Update Profile
-  Future<bool> updateProfile(String name) async {
+  // Update Profile (multi-field)
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await _apiService.put(
         ApiConfig.updateProfile,
-        data: {'name': name},
+        data: data,
       );
 
       final updatedUser = User.fromJson(response.data['data']);
@@ -152,6 +152,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
         image,
         fieldName: 'photo',
       );
+
+      final updatedUser = User.fromJson(response.data['data']);
+      state = state.copyWith(
+        user: updatedUser.copyWith(token: state.user?.token),
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Delete Photo
+  Future<bool> deletePhoto() async {
+    try {
+      final response = await _apiService.delete(ApiConfig.deletePhoto);
 
       final updatedUser = User.fromJson(response.data['data']);
       state = state.copyWith(

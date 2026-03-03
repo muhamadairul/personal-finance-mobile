@@ -21,7 +21,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen for logout
     ref.listenManual(authProvider, (previous, next) {
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
         if (mounted) {
@@ -31,11 +30,126 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  Future<void> _pickAndUploadPhoto() async {
+  // ---------- Photo Options ----------
+
+  void _showPhotoOptions() {
+    final user = ref.read(authProvider).user;
+    final hasPhoto = user?.photoUrl != null;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Foto Profil',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                title: Text(
+                  'Pilih dari Galeri',
+                  style: GoogleFonts.poppins(fontSize: 15),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadPhoto(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                title: Text(
+                  'Ambil Foto',
+                  style: GoogleFonts.poppins(fontSize: 15),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadPhoto(ImageSource.camera);
+                },
+              ),
+              if (hasPhoto)
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.expense.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.expense,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'Hapus Foto',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: AppColors.expense,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _deletePhoto();
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
@@ -67,7 +181,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal membuka galeri: $e'),
+            content: Text('Gagal membuka kamera/galeri: $e'),
             backgroundColor: AppColors.expense,
           ),
         );
@@ -75,74 +189,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _showEditNameDialog() {
-    final nameController = TextEditingController(
-      text: ref.read(authProvider).user?.name ?? '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Edit Nama',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+  Future<void> _deletePhoto() async {
+    setState(() => _isUploading = true);
+    final success = await ref.read(authProvider.notifier).deletePhoto();
+    if (mounted) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? 'Foto profil berhasil dihapus' : 'Gagal menghapus foto',
+          ),
+          backgroundColor: success ? AppColors.income : AppColors.expense,
         ),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'Nama',
-            hintText: 'Masukkan nama Anda',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-
-              Navigator.pop(ctx);
-
-              final success = await ref
-                  .read(authProvider.notifier)
-                  .updateProfile(name);
-
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? 'Nama berhasil diperbarui'
-                          : 'Gagal memperbarui nama',
-                    ),
-                    backgroundColor: success
-                        ? AppColors.income
-                        : AppColors.expense,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text(
-              'Simpan',
-              style: GoogleFonts.poppins(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
+
+  // ---------- Logout ----------
 
   void _confirmLogout() {
     showDialog(
@@ -177,6 +240,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  // ---------- Build ----------
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -193,7 +258,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               // Profile Photo
               GestureDetector(
-                onTap: _isUploading ? null : _pickAndUploadPhoto,
+                onTap: _isUploading ? null : _showPhotoOptions,
                 child: Stack(
                   children: [
                     Container(
@@ -277,6 +342,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
+
+              // Detail info chips
+              if (user?.phone != null || user?.gender != null) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    if (user?.phone != null)
+                      _infoChip(Icons.phone_outlined, user!.phone!),
+                    if (user?.gender != null)
+                      _infoChip(
+                        Icons.person_outline,
+                        user!.gender == 'L' ? 'Laki-laki' : 'Perempuan',
+                      ),
+                    if (user?.dateOfBirth != null)
+                      _infoChip(
+                        Icons.cake_outlined,
+                        DateFormat(
+                          'd MMM yyyy',
+                          'id_ID',
+                        ).format(user!.dateOfBirth!),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 32),
 
               // Subscription Status Card
@@ -287,9 +379,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _menuTile(
                 icon: Icons.edit_outlined,
                 color: AppColors.primary,
-                title: 'Edit Nama',
-                subtitle: 'Ubah nama tampilan Anda',
-                onTap: _showEditNameDialog,
+                title: 'Edit Profile',
+                subtitle: 'Ubah nama, telepon, alamat, dan lainnya',
+                onTap: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/profile/edit',
+                  );
+                  if (result == true) {
+                    // Profile updated — state already refreshed via provider
+                  }
+                },
               ),
               _menuTile(
                 icon: Icons.settings_outlined,
@@ -327,6 +427,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -398,7 +524,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isPro = user?.isPro ?? false;
 
     if (isPro) {
-      // Pro Plan Card
       final expiry = user?.subscriptionUntil;
       final expiryText = expiry != null
           ? 'Berlaku hingga ${DateFormat('d MMMM yyyy', 'id_ID').format(expiry)}'
@@ -456,7 +581,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
     }
 
-    // Free Plan Card
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
