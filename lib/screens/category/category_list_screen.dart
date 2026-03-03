@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/providers/category_provider.dart';
+import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 class CategoryListScreen extends ConsumerStatefulWidget {
   const CategoryListScreen({super.key});
@@ -118,13 +120,50 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen>
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          // Free user: cannot add custom categories
+          final user = ref.read(authProvider).user;
+          if (!(user?.isPro ?? false)) {
+            showUpgradeDialog(context);
+            return;
+          }
           final result = await Navigator.pushNamed(context, '/categories/form');
           if (result == true) {
             ref.read(categoryProvider.notifier).fetchCategories();
           }
         },
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Builder(
+          builder: (context) {
+            final user = ref.watch(authProvider).user;
+            final isPro = user?.isPro ?? false;
+            if (!isPro) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.add, color: Colors.white),
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFD700),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock,
+                        color: Colors.white,
+                        size: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+            return const Icon(Icons.add, color: Colors.white);
+          },
+        ),
       ),
     );
   }

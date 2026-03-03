@@ -1,6 +1,6 @@
 class ApiConfig {
   static const String baseUrl =
-      'https://4797-103-163-103-209.ngrok-free.app/api';
+      'https://6948-103-93-93-123.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';

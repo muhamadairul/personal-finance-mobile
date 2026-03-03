@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/providers/report_provider.dart';
+import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'id_ID',
@@ -85,6 +87,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       AppColors.primary,
                       Icons.account_balance_wallet,
                     ),
+                    const SizedBox(height: 16),
+                    // Export buttons
+                    _buildExportButtons(),
                     const SizedBox(height: 24),
                     // Pie Chart
                     _buildCategoryPieChart(report),
@@ -96,6 +101,92 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildExportButtons() {
+    final user = ref.watch(authProvider).user;
+    final isPro = user?.isPro ?? false;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _exportButton(
+            icon: Icons.picture_as_pdf,
+            label: 'Export PDF',
+            isPro: isPro,
+            onTap: () {
+              if (!isPro) {
+                showUpgradeDialog(context);
+              } else {
+                Navigator.pushNamed(context, '/export/pdf');
+              }
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _exportButton(
+            icon: Icons.table_chart,
+            label: 'Export Excel',
+            isPro: isPro,
+            onTap: () {
+              if (!isPro) {
+                showUpgradeDialog(context);
+              } else {
+                Navigator.pushNamed(context, '/export/excel');
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _exportButton({
+    required IconData icon,
+    required String label,
+    required bool isPro,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isPro ? Colors.white : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isPro ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isPro ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
+            ),
+            if (!isPro) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.lock, size: 14, color: Color(0xFFFFD700)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/screens/home/home_screen.dart';
 import 'package:pencatat_keuangan/widgets/transaction_card.dart';
+import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 final currencyFormat = NumberFormat.currency(
   locale: 'id_ID',
@@ -62,6 +63,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                       ),
                       const SizedBox(height: 24),
                       _buildWeeklyChart(dashboard.weeklyExpenses),
+                      // Ad banner for free users
+                      if (!(authState.user?.isPro ?? false)) ...[
+                        const SizedBox(height: 16),
+                        _buildAdBanner(),
+                      ],
                       const SizedBox(height: 24),
                       _buildRecentTransactions(dashboard),
                       const SizedBox(height: 100),
@@ -551,6 +557,46 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                 ),
               ),
       ],
+    );
+  }
+
+  Widget _buildAdBanner() {
+    return GestureDetector(
+      onTap: () => showUpgradeDialog(context),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.campaign_outlined,
+              size: 18,
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Upgrade ke Pro untuk hapus iklan',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 12,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

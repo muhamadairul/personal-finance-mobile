@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
+import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'id_ID',
@@ -289,6 +291,13 @@ class _WalletListScreenState extends ConsumerState<WalletListScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          // Free user: max 2 wallets
+          final user = ref.read(authProvider).user;
+          final walletCount = ref.read(walletProvider).wallets.length;
+          if (!(user?.isPro ?? false) && walletCount >= 2) {
+            showUpgradeDialog(context);
+            return;
+          }
           final result = await Navigator.pushNamed(context, '/wallets/form');
           if (result == true) {
             ref.read(walletProvider.notifier).fetchWallets();
