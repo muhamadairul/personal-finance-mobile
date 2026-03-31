@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -169,10 +170,7 @@ class _WalletListScreenState extends ConsumerState<WalletListScreen> {
                 ),
                 const SizedBox(height: 12),
                 ...state.wallets.map((wallet) {
-                  final iconData = IconData(
-                    wallet.icon,
-                    fontFamily: 'MaterialIcons',
-                  );
+                  final iconData = IconHelper.getIcon(wallet.icon);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(

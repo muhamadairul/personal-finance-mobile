@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 
 class Category {
   final int id;
@@ -19,7 +20,7 @@ class Category {
     return Category(
       id: json['id'] as int,
       name: json['name'] as String,
-      icon: IconData(json['icon'] as int, fontFamily: 'MaterialIcons'),
+      icon: IconHelper.getIcon(json['icon'] as int?),
       color: json['color'] as int,
       type: json['type'] as String,
     );
@@ -29,7 +30,7 @@ class Category {
     return Category(
       id: map['id'] as int,
       name: map['name'] as String,
-      icon: map['icon'] as IconData,
+      icon: map['icon'] is IconData ? (map['icon'] as IconData) : IconHelper.getIcon(map['icon'] as int?),
       color: map['color'] as int,
       type: map['type'] as String,
     );

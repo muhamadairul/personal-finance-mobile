@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/models/budget.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'id_ID',
@@ -24,9 +25,7 @@ class BudgetProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconData = budget.categoryIcon != null
-        ? IconData(budget.categoryIcon!, fontFamily: 'MaterialIcons')
-        : Icons.category;
+    final iconData = IconHelper.getIcon(budget.categoryIcon);
     final iconColor = budget.categoryColor != null
         ? Color(budget.categoryColor!)
         : AppColors.textSecondary;

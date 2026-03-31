@@ -8,6 +8,7 @@ import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
 import 'package:pencatat_keuangan/providers/report_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 
 class TransactionDetailScreen extends ConsumerWidget {
   const TransactionDetailScreen({super.key});
@@ -138,10 +139,7 @@ class TransactionDetailScreen extends ConsumerWidget {
                     ),
                     child: Icon(
                       transaction.categoryIcon != null
-                          ? IconData(
-                              transaction.categoryIcon!,
-                              fontFamily: 'MaterialIcons',
-                            )
+                          ? IconHelper.getIcon(transaction.categoryIcon)
                           : (isExpense
                                 ? Icons.arrow_downward
                                 : Icons.arrow_upward),

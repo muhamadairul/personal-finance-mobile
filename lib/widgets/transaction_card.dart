@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/models/transaction.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 
 final _currencyFormat = NumberFormat.currency(
   locale: 'id_ID',
@@ -25,9 +26,7 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = transaction.isIncome;
-    final iconData = transaction.categoryIcon != null
-        ? IconData(transaction.categoryIcon!, fontFamily: 'MaterialIcons')
-        : Icons.category;
+    final iconData = IconHelper.getIcon(transaction.categoryIcon);
     final iconColor = transaction.categoryColor != null
         ? Color(transaction.categoryColor!)
         : AppColors.textSecondary;

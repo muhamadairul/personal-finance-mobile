@@ -9,6 +9,7 @@ import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
 import 'package:pencatat_keuangan/providers/report_provider.dart';
 import 'package:pencatat_keuangan/providers/transaction_provider.dart';
 import 'package:pencatat_keuangan/providers/wallet_provider.dart';
+import 'package:pencatat_keuangan/utils/icon_helper.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   const TransactionFormScreen({super.key});
@@ -449,10 +450,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
             const SizedBox(height: 8),
             ...walletState.wallets.map((wallet) {
               final isSelected = wallet.id == _selectedWalletId;
-              final iconData = IconData(
-                wallet.icon,
-                fontFamily: 'MaterialIcons',
-              );
+              final iconData = IconHelper.getIcon(wallet.icon);
               return GestureDetector(
                 onTap: () => setState(() => _selectedWalletId = wallet.id),
                 child: Container(

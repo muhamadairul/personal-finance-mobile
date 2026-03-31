@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://6948-103-93-93-123.ngrok-free.app/api';
+  static const String baseUrl = 'https://personal-finance-backend-production-8468.up.railway.app/api';
 
   // Auth endpoints
   static const String login = '/login';
