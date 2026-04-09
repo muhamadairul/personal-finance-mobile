@@ -635,7 +635,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             width: double.infinity,
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: () => showUpgradeDialog(context),
+              onPressed: () => Navigator.pushNamed(context, '/subscription'),
               icon: const Icon(Icons.workspace_premium, size: 18),
               label: Text(
                 'Upgrade Now',

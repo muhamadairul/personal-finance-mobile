@@ -113,16 +113,7 @@ class _UpgradeDialogContent extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // TODO: Integrate payment gateway
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Hubungi admin untuk upgrade ke Pro.',
-                        style: GoogleFonts.poppins(),
-                      ),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
+                  Navigator.pushNamed(context, '/subscription');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,

@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://personal-finance-backend-production-8468.up.railway.app/api';
+  static const String baseUrl = 'https://d51f-203-190-43-197.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
@@ -34,4 +34,10 @@ class ApiConfig {
   static const String updateProfile = '/user/profile';
   static const String uploadPhoto = '/user/photo';
   static const String deletePhoto = '/user/photo';
+
+  // Subscription
+  static const String subscriptionPlans = '/subscription/plans';
+  static const String subscriptionStatus = '/subscription/status';
+  static const String subscriptionCreateInvoice = '/subscription/create-invoice';
+  static const String subscriptionHistory = '/subscription/history';
 }

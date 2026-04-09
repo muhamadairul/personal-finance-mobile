@@ -562,7 +562,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   Widget _buildAdBanner() {
     return GestureDetector(
-      onTap: () => showUpgradeDialog(context),
+      onTap: () => Navigator.pushNamed(context, '/subscription'),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),

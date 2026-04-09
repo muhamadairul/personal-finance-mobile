@@ -16,6 +16,7 @@ import 'package:pencatat_keuangan/screens/wallet/wallet_list_screen.dart';
 import 'package:pencatat_keuangan/screens/wallet/wallet_form_screen.dart';
 import 'package:pencatat_keuangan/screens/settings/settings_screen.dart';
 import 'package:pencatat_keuangan/screens/profile/edit_profile_screen.dart';
+import 'package:pencatat_keuangan/screens/subscription/subscription_screen.dart';
 
 // Theme mode provider
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
@@ -51,6 +52,7 @@ class PencatatKeuanganApp extends ConsumerWidget {
         '/wallets/form': (context) => const WalletFormScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/profile/edit': (context) => const EditProfileScreen(),
+        '/subscription': (context) => const SubscriptionScreen(),
       },
     );
   }
