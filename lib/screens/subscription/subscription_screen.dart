@@ -1,12 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/providers/subscription_provider.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
+import 'package:pencatat_keuangan/screens/subscription/payment_method_screen.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -15,10 +14,8 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
   ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
-    with WidgetsBindingObserver {
+class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   String _selectedPlanId = 'monthly';
-  bool _justReturned = false;
 
   final currencyFormat = NumberFormat.currency(
     locale: 'id_ID',
@@ -29,142 +26,26 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(subscriptionProvider.notifier).loadAll();
     });
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  /// When user returns from browser (payment), auto-refresh status
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _justReturned) {
-      _justReturned = false;
-      _checkPaymentStatus();
-    }
-  }
-
-  Future<void> _checkPaymentStatus() async {
-    final upgraded =
-        await ref.read(subscriptionProvider.notifier).refreshStatus();
-
-    if (upgraded && mounted) {
-      // Also refresh auth state to propagate isPro across the app
-      ref.read(authProvider.notifier).checkAuth();
-
-      // Reload subscription data
-      ref.read(subscriptionProvider.notifier).loadAll();
-
-      _showSuccessDialog();
-    }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        contentPadding: const EdgeInsets.all(32),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00C853), Color(0xFF69F0AE)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00C853).withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child:
-                  const Icon(Icons.check_rounded, color: Colors.white, size: 48),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Upgrade Berhasil! 🎉',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Selamat! Anda sekarang pengguna Pro.\nNikmati semua fitur premium tanpa batas.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pop(context); // back to profile
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Mulai Jelajahi',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+  Future<void> _handleSubscribe() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentMethodScreen(planId: _selectedPlanId),
       ),
     );
-  }
 
-  Future<void> _handleSubscribe() async {
-    final invoiceUrl = await ref
-        .read(subscriptionProvider.notifier)
-        .createInvoice(_selectedPlanId);
-
-    if (invoiceUrl != null && mounted) {
-      _justReturned = true;
-      final uri = Uri.parse(invoiceUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Tidak dapat membuka halaman pembayaran.',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: AppColors.expense,
-          ),
-        );
-      }
+    if (result == true && mounted) {
+      // Payment successful — refresh everything
+      ref.read(authProvider.notifier).checkAuth();
+      ref.read(subscriptionProvider.notifier).loadAll();
+    } else if (mounted) {
+      // User cancelled or payment failed — just refresh data
+      ref.read(subscriptionProvider.notifier).loadAll();
     }
   }
 
@@ -188,9 +69,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       body: subState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => ref
-                  .read(subscriptionProvider.notifier)
-                  .loadAll(),
+              onRefresh: () =>
+                  ref.read(subscriptionProvider.notifier).loadAll(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(20),
@@ -214,14 +94,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                       const SizedBox(height: 14),
                       ...subState.plans.map((plan) => _buildPlanCard(plan)),
                       const SizedBox(height: 20),
-
-                      // Subscribe button
                       _buildSubscribeButton(subState),
                       const SizedBox(height: 28),
                     ],
 
                     if (isPro) ...[
-                      // Extend subscription
                       Text(
                         'Perpanjang Langganan',
                         style: GoogleFonts.poppins(
@@ -418,7 +295,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
         ),
         child: Row(
           children: [
-            // Radio indicator
             Container(
               width: 24,
               height: 24,
@@ -443,8 +319,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                   : null,
             ),
             const SizedBox(width: 16),
-
-            // Plan info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,8 +367,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                 ],
               ),
             ),
-
-            // Price
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -545,27 +417,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
           ],
         ),
         child: ElevatedButton.icon(
-          onPressed:
-              subState.isCreatingInvoice ? null : _handleSubscribe,
-          icon: subState.isCreatingInvoice
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Icon(
-                  isExtend ? Icons.refresh : Icons.bolt,
-                  color: Colors.white,
-                ),
+          onPressed: _handleSubscribe,
+          icon: Icon(
+            isExtend ? Icons.refresh : Icons.bolt,
+            color: Colors.white,
+          ),
           label: Text(
-            subState.isCreatingInvoice
-                ? 'Memproses...'
-                : isExtend
-                    ? 'Perpanjang Langganan'
-                    : 'Lanjutkan Pembayaran',
+            isExtend ? 'Perpanjang Langganan' : 'Pilih Pembayaran',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -650,7 +508,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
         children: [
           Row(
             children: [
-              // Type badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -668,7 +525,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              // Plan badge
               if (h.planId != null)
                 Container(
                   padding:
@@ -687,7 +543,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                   ),
                 ),
               const Spacer(),
-              // Status badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

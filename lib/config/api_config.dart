@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://d51f-203-190-43-197.ngrok-free.app/api';
+  static const String baseUrl = 'https://e768-114-5-245-134.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
@@ -38,6 +38,9 @@ class ApiConfig {
   // Subscription
   static const String subscriptionPlans = '/subscription/plans';
   static const String subscriptionStatus = '/subscription/status';
-  static const String subscriptionCreateInvoice = '/subscription/create-invoice';
+  static const String subscriptionPayQris = '/subscription/pay/qris';
+  static const String subscriptionPayVa = '/subscription/pay/va';
+  static const String subscriptionPayEwallet = '/subscription/pay/ewallet';
+  static const String subscriptionCheck = '/subscription/check'; // + /{id}
   static const String subscriptionHistory = '/subscription/history';
 }

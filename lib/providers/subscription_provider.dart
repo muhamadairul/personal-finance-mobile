@@ -93,43 +93,39 @@ class SubscriptionHistory {
 @immutable
 class SubscriptionState {
   final bool isLoading;
-  final bool isCreatingInvoice;
+  final bool isProcessingPayment;
   final List<SubscriptionPlan> plans;
   final List<SubscriptionHistory> history;
   final bool isPro;
   final DateTime? subscriptionUntil;
-  final String? invoiceUrl;
   final String? error;
 
   const SubscriptionState({
     this.isLoading = false,
-    this.isCreatingInvoice = false,
+    this.isProcessingPayment = false,
     this.plans = const [],
     this.history = const [],
     this.isPro = false,
     this.subscriptionUntil,
-    this.invoiceUrl,
     this.error,
   });
 
   SubscriptionState copyWith({
     bool? isLoading,
-    bool? isCreatingInvoice,
+    bool? isProcessingPayment,
     List<SubscriptionPlan>? plans,
     List<SubscriptionHistory>? history,
     bool? isPro,
     DateTime? subscriptionUntil,
-    String? invoiceUrl,
     String? error,
   }) {
     return SubscriptionState(
       isLoading: isLoading ?? this.isLoading,
-      isCreatingInvoice: isCreatingInvoice ?? this.isCreatingInvoice,
+      isProcessingPayment: isProcessingPayment ?? this.isProcessingPayment,
       plans: plans ?? this.plans,
       history: history ?? this.history,
       isPro: isPro ?? this.isPro,
       subscriptionUntil: subscriptionUntil ?? this.subscriptionUntil,
-      invoiceUrl: invoiceUrl ?? this.invoiceUrl,
       error: error,
     );
   }
@@ -207,33 +203,81 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
             ? DateTime.tryParse(data['subscription_until'] as String)
             : null,
       );
-      // Return true if status changed from Free → Pro
       return !wasPro && state.isPro;
     } catch (_) {
       return false;
     }
   }
 
-  /// Create a Xendit Invoice and return the payment URL.
-  Future<String?> createInvoice(String planId) async {
-    state = state.copyWith(isCreatingInvoice: true, error: null);
+  // ─── Payment Methods ──────────────────────────────────────────────────────
+
+  /// QRIS — create payment, return { subscription_id, qr_string, amount, expires_at }
+  Future<Map<String, dynamic>?> payQris(String planId) async {
+    state = state.copyWith(isProcessingPayment: true, error: null);
     try {
       final response = await _apiService.post(
-        ApiConfig.subscriptionCreateInvoice,
+        ApiConfig.subscriptionPayQris,
         data: {'plan_id': planId},
       );
-      final invoiceUrl = response.data['data']['invoice_url'] as String?;
-      state = state.copyWith(
-        isCreatingInvoice: false,
-        invoiceUrl: invoiceUrl,
-      );
-      return invoiceUrl;
+      state = state.copyWith(isProcessingPayment: false);
+      return response.data['data'] as Map<String, dynamic>?;
     } catch (e) {
       state = state.copyWith(
-        isCreatingInvoice: false,
-        error: 'Gagal membuat invoice pembayaran.',
+        isProcessingPayment: false,
+        error: 'Gagal membuat pembayaran QRIS.',
       );
       return null;
+    }
+  }
+
+  /// Virtual Account — create payment, return { subscription_id, va_number, bank_code, amount, expires_at }
+  Future<Map<String, dynamic>?> payVa(String planId, String bankCode) async {
+    state = state.copyWith(isProcessingPayment: true, error: null);
+    try {
+      final response = await _apiService.post(
+        ApiConfig.subscriptionPayVa,
+        data: {'plan_id': planId, 'bank_code': bankCode},
+      );
+      state = state.copyWith(isProcessingPayment: false);
+      return response.data['data'] as Map<String, dynamic>?;
+    } catch (e) {
+      state = state.copyWith(
+        isProcessingPayment: false,
+        error: 'Gagal membuat pembayaran VA.',
+      );
+      return null;
+    }
+  }
+
+  /// E-Wallet — create payment, return { subscription_id, deep_link_url, actions, channel_code, amount }
+  Future<Map<String, dynamic>?> payEwallet(String planId, String channelCode) async {
+    state = state.copyWith(isProcessingPayment: true, error: null);
+    try {
+      final response = await _apiService.post(
+        ApiConfig.subscriptionPayEwallet,
+        data: {'plan_id': planId, 'channel_code': channelCode},
+      );
+      state = state.copyWith(isProcessingPayment: false);
+      return response.data['data'] as Map<String, dynamic>?;
+    } catch (e) {
+      state = state.copyWith(
+        isProcessingPayment: false,
+        error: 'Gagal membuat pembayaran E-Wallet.',
+      );
+      return null;
+    }
+  }
+
+  /// Poll payment status by subscription_id.
+  /// Returns: 'pending', 'paid', 'expired', 'failed'
+  Future<String> checkPaymentStatus(int subscriptionId) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConfig.subscriptionCheck}/$subscriptionId',
+      );
+      return response.data['status'] as String? ?? 'pending';
+    } catch (_) {
+      return 'pending';
     }
   }
 }
