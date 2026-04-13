@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://e768-114-5-245-134.ngrok-free.app/api';
+  static const String baseUrl = 'https://6a85-157-10-90-5.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
@@ -27,7 +27,7 @@ class ApiConfig {
   static const String reportCategory = '/reports/category';
 
   // Export
-  static const String exportCsv = '/export/csv';
+  static const String exportExcel = '/export/excel';
   static const String exportPdf = '/export/pdf';
 
   // Profile

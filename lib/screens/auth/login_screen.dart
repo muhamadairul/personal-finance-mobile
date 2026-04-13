@@ -383,7 +383,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '© 2024 FINANCE PRO APP • SECURE & ENCRYPTED',
+                    '© 2026 FINANCE PRO APP • SECURE & ENCRYPTED',
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       color: Colors.white.withValues(alpha: 0.5),
