@@ -44,6 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Google Services
+
+# Firebase credentials
 google-services.json
-GoogleService-Info.plist
