@@ -1,11 +1,15 @@
 class ApiConfig {
-  static const String baseUrl = 'https://6a85-157-10-90-5.ngrok-free.app/api';
+  static const String baseUrl = 'https://4bb6-203-190-43-197.ngrok-free.app/api';
 
   // Auth endpoints
   static const String login = '/login';
   static const String register = '/register';
   static const String logout = '/logout';
   static const String user = '/user';
+  static const String socialLogin = '/auth/social';
+
+  // FCM Token
+  static const String updateFcmToken = '/user/fcm-token';
 
   // Dashboard
   static const String dashboard = '/dashboard';

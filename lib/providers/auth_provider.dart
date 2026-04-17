@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/user.dart';
 import 'package:pencatat_keuangan/services/api_service.dart';
+import 'package:pencatat_keuangan/services/social_auth_service.dart';
+import 'package:pencatat_keuangan/services/notification_service.dart';
 import 'package:pencatat_keuangan/config/api_config.dart';
 
 // Auth state
@@ -37,6 +39,8 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiService _apiService = ApiService();
+  final SocialAuthService _socialAuthService = SocialAuthService();
+  final NotificationService _notificationService = NotificationService();
 
   AuthNotifier() : super(const AuthState());
 
@@ -54,6 +58,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isAuthenticated: true,
           isLoading: false,
         );
+
+        // Register FCM token after confirming auth
+        await _notificationService.registerToken();
       } else {
         state = const AuthState(isLoading: false);
       }
@@ -82,11 +89,63 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+
+      // Register FCM token after login
+      await _notificationService.registerToken();
+
       return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Email atau kata sandi salah',
+      );
+      return false;
+    }
+  }
+
+  // Login with Google
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      // 1. Google Sign-In (native SDK)
+      final result = await _socialAuthService.signInWithGoogle();
+
+      if (result == null) {
+        // User cancelled
+        state = state.copyWith(isLoading: false);
+        return false;
+      }
+
+      // 2. Send ID token to backend for verification & user creation
+      final response = await _apiService.post(
+        ApiConfig.socialLogin,
+        data: {
+          'provider': 'google',
+          'id_token': result.idToken,
+          'name': result.name,
+          'email': result.email,
+        },
+      );
+
+      final token = response.data['token'] as String;
+      await _apiService.saveToken(token);
+
+      final user = User.fromJson(response.data['user']);
+      state = AuthState(
+        user: user.copyWith(token: token),
+        isAuthenticated: true,
+        isLoading: false,
+      );
+
+      // Register FCM token after social login
+      await _notificationService.registerToken();
+
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Login dengan Google gagal. Silakan coba lagi.',
       );
       return false;
     }
@@ -116,6 +175,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+
+      // Register FCM token after registration
+      await _notificationService.registerToken();
+
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -183,6 +246,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true);
 
     try {
+      // Unregister FCM token before logout
+      await _notificationService.unregisterToken();
+      await _socialAuthService.signOutGoogle();
       await _apiService.post(ApiConfig.logout);
     } catch (_) {}
 
