@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://personal-finance-backend-one.vercel.app/api';
+  static const String baseUrl = 'https://pencatat-keuangan-main-2b3tsn.free.laravel.cloud/api';
 
   // Auth endpoints
   static const String login = '/login';
