@@ -14,9 +14,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(
-    text: '',
-  );
+  final _emailController = TextEditingController(text: '');
   final _passwordController = TextEditingController(text: '');
   // final _emailController = TextEditingController(
   //   text: 'admin@pencatatkeuangan.com',
@@ -72,17 +70,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   const SizedBox(height: 60),
                   // Logo
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 40,
-                      color: Colors.white,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/icon/logo_dark.png',
+                      width: 80,
+                      height: 80,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -179,9 +172,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => const ForgotPasswordScreen(),
-                                  ));
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
                                 },
                                 child: Text(
                                   'Lupa Password?',
