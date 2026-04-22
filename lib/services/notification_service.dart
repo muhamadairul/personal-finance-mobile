@@ -4,6 +4,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pencatat_keuangan/services/api_service.dart';
 import 'package:pencatat_keuangan/config/api_config.dart';
+import 'package:pencatat_keuangan/app.dart';
+
+/// Triggers whenever a new foreground push notification arrives.
+/// Dashboard listens to this to refresh the badge counter in real-time.
+final ValueNotifier<int> notificationTrigger = ValueNotifier(0);
 
 /// Handles FCM push notifications: permission, token, foreground display, tap actions.
 class NotificationService {
@@ -78,8 +83,9 @@ class NotificationService {
     await _localNotifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (response) {
-        // Handle notification tap from local notification
+        // Handle notification tap from local notification (foreground tap)
         debugPrint('Local notification tapped: ${response.payload}');
+        _navigateToNotifications();
       },
     );
   }
@@ -116,6 +122,39 @@ class NotificationService {
     }
   }
 
+  /// Get notifications list from backend
+  Future<List<dynamic>> getNotifications() async {
+    try {
+      final response = await ApiService().get(ApiConfig.notifications);
+      return response.data['data'] as List<dynamic>;
+    } catch (e) {
+      debugPrint('Failed to fetch notifications: $e');
+      return [];
+    }
+  }
+
+  /// Get unread notification count from backend
+  Future<int> getUnreadCount() async {
+    try {
+      final response = await ApiService().get(ApiConfig.notificationsUnreadCount);
+      return response.data['unread_count'] as int? ?? 0;
+    } catch (e) {
+      debugPrint('Failed to fetch unread count: $e');
+      return 0;
+    }
+  }
+
+  /// Mark a notification as read
+  Future<bool> markAsRead(String id) async {
+    try {
+      await ApiService().post('${ApiConfig.notificationsRead}$id/read');
+      return true;
+    } catch (e) {
+      debugPrint('Failed to mark notification as read: $e');
+      return false;
+    }
+  }
+
   /// Unregister token (called on logout).
   Future<void> unregisterToken() async {
     try {
@@ -149,14 +188,23 @@ class NotificationService {
       ),
       payload: message.data['type'],
     );
+
+    // Trigger real-time badge counter refresh
+    notificationTrigger.value++;
   }
 
   /// Handle notification tap (app opened from background/terminated).
   void _handleNotificationTap(RemoteMessage message) {
     final type = message.data['type'];
     debugPrint('Notification tapped, type: $type');
+    _navigateToNotifications();
+  }
 
-    // Navigation can be handled here based on notification type
-    // For now, just log it. Navigation requires a navigator key or context.
+  /// Navigate to notifications screen using the global navigator key.
+  void _navigateToNotifications() {
+    // Small delay to ensure the app is fully rendered (especially from terminated state)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      navigatorKey.currentState?.pushNamed('/notifications');
+    });
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pencatat_keuangan/models/user.dart';
@@ -43,6 +44,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final NotificationService _notificationService = NotificationService();
 
   AuthNotifier() : super(const AuthState());
+
+  /// Extract a user-friendly error message from a DioException or fallback.
+  String _extractError(Object e, String fallback) {
+    if (e is DioException && e.response?.data != null) {
+      final data = e.response!.data;
+      if (data is Map) {
+        // Laravel "message" field
+        if (data.containsKey('message')) return data['message'].toString();
+        // Laravel validation "errors" object — take first error string
+        if (data.containsKey('errors') && data['errors'] is Map) {
+          final errors = data['errors'] as Map;
+          for (final field in errors.values) {
+            if (field is List && field.isNotEmpty) return field.first.toString();
+          }
+        }
+      }
+    }
+    if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
+      return 'Koneksi timeout. Silakan coba lagi.';
+    }
+    if (e is DioException && e.type == DioExceptionType.receiveTimeout) {
+      return 'Server terlalu lama merespons. Silakan coba lagi.';
+    }
+    return fallback;
+  }
 
   // Check if user is already logged in
   Future<void> checkAuth() async {
@@ -97,7 +123,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Email atau kata sandi salah',
+        error: _extractError(e, 'Email atau kata sandi salah'),
       );
       return false;
     }
@@ -145,7 +171,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Login dengan Google gagal. Silakan coba lagi.',
+        error: _extractError(e, 'Login dengan Google gagal. Silakan coba lagi.'),
       );
       return false;
     }
@@ -183,7 +209,72 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Registrasi gagal. Silakan coba lagi.',
+        error: _extractError(e, 'Registrasi gagal. Silakan coba lagi.'),
+      );
+      return false;
+    }
+  }
+
+  // Send Password Reset OTP
+  Future<bool> sendPasswordResetOtp(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiService.post(
+        ApiConfig.forgotPasswordEmail,
+        data: {'email': email},
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Gagal mengirim OTP. Silakan coba lagi.'),
+      );
+      return false;
+    }
+  }
+
+  // Verify Password Reset OTP
+  Future<bool> verifyPasswordResetOtp(String email, String otp) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiService.post(
+        ApiConfig.forgotPasswordVerifyOtp,
+        data: {
+          'email': email,
+          'otp': otp,
+        },
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Verifikasi OTP gagal. Silakan coba lagi.'),
+      );
+      return false;
+    }
+  }
+
+  // Reset Password
+  Future<bool> resetPassword(String email, String otp, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiService.post(
+        ApiConfig.forgotPasswordReset,
+        data: {
+          'email': email,
+          'otp': otp,
+          'password': password,
+          'password_confirmation': password,
+        },
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Gagal mereset password. Silakan coba lagi.'),
       );
       return false;
     }

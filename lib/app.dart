@@ -17,9 +17,13 @@ import 'package:pencatat_keuangan/screens/wallet/wallet_form_screen.dart';
 import 'package:pencatat_keuangan/screens/settings/settings_screen.dart';
 import 'package:pencatat_keuangan/screens/profile/edit_profile_screen.dart';
 import 'package:pencatat_keuangan/screens/subscription/subscription_screen.dart';
+import 'package:pencatat_keuangan/screens/notification/notification_screen.dart';
 
 // Theme mode provider
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
+
+// Global navigator key for deep navigation from NotificationService
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class PencatatKeuanganApp extends ConsumerWidget {
   const PencatatKeuanganApp({super.key});
@@ -34,6 +38,7 @@ class PencatatKeuanganApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      navigatorKey: navigatorKey,
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
@@ -53,6 +58,7 @@ class PencatatKeuanganApp extends ConsumerWidget {
         '/settings': (context) => const SettingsScreen(),
         '/profile/edit': (context) => const EditProfileScreen(),
         '/subscription': (context) => const SubscriptionScreen(),
+        '/notifications': (context) => const NotificationScreen(),
       },
     );
   }

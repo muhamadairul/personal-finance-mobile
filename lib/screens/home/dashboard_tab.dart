@@ -7,6 +7,9 @@ import 'package:pencatat_keuangan/config/app_theme.dart';
 import 'package:pencatat_keuangan/providers/dashboard_provider.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/screens/home/home_screen.dart';
+import 'package:pencatat_keuangan/screens/notification/notification_screen.dart';
+import 'package:pencatat_keuangan/providers/notification_provider.dart';
+import 'package:pencatat_keuangan/services/notification_service.dart' show notificationTrigger;
 import 'package:pencatat_keuangan/widgets/transaction_card.dart';
 import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
 
@@ -29,7 +32,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(dashboardProvider.notifier).fetchDashboard();
+      ref.read(notificationProvider.notifier).fetchUnreadCount();
     });
+
+    // Listen for new foreground push notifications to refresh badge in real-time
+    notificationTrigger.addListener(_onNewNotification);
+  }
+
+  @override
+  void dispose() {
+    notificationTrigger.removeListener(_onNewNotification);
+    super.dispose();
+  }
+
+  void _onNewNotification() {
+    ref.read(notificationProvider.notifier).fetchUnreadCount();
   }
 
   @override
@@ -144,10 +161,46 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               ),
             ],
           ),
-          child: IconButton(
-            icon: const Icon(Icons.notifications_outlined, size: 22),
-            color: AppColors.textPrimary,
-            onPressed: () {},
+          child: Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, size: 22),
+                color: AppColors.textPrimary,
+                onPressed: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const NotificationScreen(),
+                  ));
+                  // Refresh count when returning
+                  ref.read(notificationProvider.notifier).fetchUnreadCount();
+                },
+              ),
+              // Badge
+              Consumer(builder: (context, ref, _) {
+                final unreadCount = ref.watch(notificationProvider).unreadCount;
+                if (unreadCount <= 0) return const SizedBox.shrink();
+                return Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.expense,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
         ),
       ],

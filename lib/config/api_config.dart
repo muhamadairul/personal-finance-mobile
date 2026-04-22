@@ -8,11 +8,22 @@ class ApiConfig {
   static const String user = '/user';
   static const String socialLogin = '/auth/social';
 
+  // Forgot Password
+  static const String forgotPasswordEmail = '/password/email';
+  static const String forgotPasswordVerifyOtp = '/password/verify-otp';
+  static const String forgotPasswordReset = '/password/reset';
+
   // FCM Token
   static const String updateFcmToken = '/user/fcm-token';
 
   // Dashboard
   static const String dashboard = '/dashboard';
+
+  // Notifications
+  static const String notifications = '/notifications';
+  static const String notificationsUnreadCount = '/notifications/unread-count';
+  static const String notificationsReadAll = '/notifications/read-all';
+  static const String notificationsRead = '/notifications/'; // append {id}/read
 
   // Transactions
   static const String transactions = '/transactions';
