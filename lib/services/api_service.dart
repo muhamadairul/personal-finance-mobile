@@ -6,6 +6,7 @@ import 'package:pencatat_keuangan/config/api_config.dart';
 class ApiService {
   late final Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  void Function()? onUnauthorized;
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -35,7 +36,7 @@ class ApiService {
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
             await _storage.delete(key: 'auth_token');
-            // Could trigger global logout event here
+            onUnauthorized?.call();
           }
           handler.next(error);
         },
@@ -82,7 +83,7 @@ class ApiService {
     final formData = FormData.fromMap({
       fieldName: await MultipartFile.fromFile(
         file.path,
-        filename: file.path.split(Platform.pathSeparator).last,
+        filename: file.path.split('/').last,
       ),
     });
     return _dio.post(

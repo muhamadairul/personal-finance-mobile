@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -19,6 +20,8 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  StreamSubscription<String>? _tokenRefreshSubscription;
+  void Function(String type)? onNotificationReceived;
 
   bool _initialized = false;
 
@@ -99,8 +102,11 @@ class NotificationService {
         await _sendTokenToBackend(token);
       }
 
+      // Cancel any existing subscription before listening again
+      await _tokenRefreshSubscription?.cancel();
+
       // Listen for token refresh
-      _messaging.onTokenRefresh.listen((newToken) {
+      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((newToken) {
         debugPrint('FCM Token refreshed');
         _sendTokenToBackend(newToken);
       });
@@ -158,6 +164,8 @@ class NotificationService {
   /// Unregister token (called on logout).
   Future<void> unregisterToken() async {
     try {
+      await _tokenRefreshSubscription?.cancel();
+      _tokenRefreshSubscription = null;
       await _messaging.deleteToken();
       debugPrint('FCM token deleted');
     } catch (e) {
@@ -171,6 +179,8 @@ class NotificationService {
 
     final notification = message.notification;
     if (notification == null) return;
+
+    final type = message.data['type'] as String?;
 
     _localNotifications.show(
       notification.hashCode,
@@ -186,17 +196,24 @@ class NotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      payload: message.data['type'],
+      payload: type,
     );
 
     // Trigger real-time badge counter refresh
     notificationTrigger.value++;
+
+    if (type != null) {
+      onNotificationReceived?.call(type);
+    }
   }
 
   /// Handle notification tap (app opened from background/terminated).
   void _handleNotificationTap(RemoteMessage message) {
     final type = message.data['type'];
     debugPrint('Notification tapped, type: $type');
+    if (type != null) {
+      onNotificationReceived?.call(type);
+    }
     _navigateToNotifications();
   }
 

@@ -5,6 +5,7 @@ import 'package:pencatat_keuangan/screens/home/dashboard_tab.dart';
 import 'package:pencatat_keuangan/screens/transaction/transaction_list_screen.dart';
 import 'package:pencatat_keuangan/screens/report/report_screen.dart';
 import 'package:pencatat_keuangan/screens/profile/profile_screen.dart';
+import 'package:pencatat_keuangan/providers/auth_provider.dart';
 
 final currentTabProvider = StateProvider<int>((ref) => 0);
 
@@ -101,7 +102,12 @@ class HomeScreen extends ConsumerWidget {
     final isSelected = currentTab == index;
 
     return InkWell(
-      onTap: () => ref.read(currentTabProvider.notifier).state = index,
+      onTap: () {
+        ref.read(currentTabProvider.notifier).state = index;
+        if (index == 3) {
+          ref.read(authProvider.notifier).checkAuth();
+        }
+      },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

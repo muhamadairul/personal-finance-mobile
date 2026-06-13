@@ -59,6 +59,7 @@ class TransactionNotifier extends StateNotifier<TransactionState> {
       );
     } catch (e) {
       state = state.copyWith(error: 'Gagal menambah transaksi');
+      rethrow;
     }
   }
 
@@ -76,6 +77,7 @@ class TransactionNotifier extends StateNotifier<TransactionState> {
       );
     } catch (e) {
       state = state.copyWith(error: 'Gagal mengubah transaksi');
+      rethrow;
     }
   }
 
@@ -87,6 +89,7 @@ class TransactionNotifier extends StateNotifier<TransactionState> {
       );
     } catch (e) {
       state = state.copyWith(error: 'Gagal menghapus transaksi');
+      rethrow;
     }
   }
 }

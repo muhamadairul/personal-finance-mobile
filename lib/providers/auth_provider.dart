@@ -7,6 +7,7 @@ import 'package:pencatat_keuangan/services/api_service.dart';
 import 'package:pencatat_keuangan/services/social_auth_service.dart';
 import 'package:pencatat_keuangan/services/notification_service.dart';
 import 'package:pencatat_keuangan/config/api_config.dart';
+import 'package:pencatat_keuangan/app.dart';
 
 // Auth state
 @immutable
@@ -43,7 +44,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final SocialAuthService _socialAuthService = SocialAuthService();
   final NotificationService _notificationService = NotificationService();
 
-  AuthNotifier() : super(const AuthState());
+  AuthNotifier() : super(const AuthState()) {
+    _apiService.onUnauthorized = () {
+      state = const AuthState();
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
+    };
+
+    _notificationService.onNotificationReceived = (type) {
+      if (type == 'subscription_paid') {
+        checkAuth();
+      }
+    };
+  }
 
   /// Extract a user-friendly error message from a DioException or fallback.
   String _extractError(Object e, String fallback) {
@@ -91,8 +103,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = const AuthState(isLoading: false);
       }
     } catch (e) {
-      await _apiService.clearToken();
-      state = const AuthState(isLoading: false);
+      if (e is DioException && e.response?.statusCode == 401) {
+        await _apiService.clearToken();
+        state = const AuthState(isLoading: false);
+      } else {
+        // Keep authenticated status if a token exists, so they don't get logged out while offline.
+        final token = await _apiService.getToken();
+        state = AuthState(
+          isAuthenticated: token != null,
+          isLoading: false,
+          error: 'Koneksi internet bermasalah.',
+        );
+      }
     }
   }
 

@@ -98,7 +98,9 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       );
       final newBudget = Budget.fromJson(response.data['data']);
       state = state.copyWith(budgets: [...state.budgets, newBudget]);
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> updateBudget(Budget budget) async {
@@ -118,7 +120,9 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
             .map((b) => b.id == updated.id ? updated : b)
             .toList(),
       );
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> deleteBudget(int id) async {
@@ -127,7 +131,9 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       state = state.copyWith(
         budgets: state.budgets.where((b) => b.id != id).toList(),
       );
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 }
 

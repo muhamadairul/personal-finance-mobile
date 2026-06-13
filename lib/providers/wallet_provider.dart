@@ -45,7 +45,9 @@ class WalletNotifier extends StateNotifier<WalletState> {
       );
       final newWallet = Wallet.fromJson(response.data['data']);
       state = state.copyWith(wallets: [...state.wallets, newWallet]);
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> updateWallet(Wallet wallet) async {
@@ -60,7 +62,9 @@ class WalletNotifier extends StateNotifier<WalletState> {
             .map((w) => w.id == updated.id ? updated : w)
             .toList(),
       );
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> deleteWallet(int id) async {
@@ -69,7 +73,9 @@ class WalletNotifier extends StateNotifier<WalletState> {
       state = state.copyWith(
         wallets: state.wallets.where((w) => w.id != id).toList(),
       );
-    } catch (_) {}
+    } catch (e) {
+      rethrow;
+    }
   }
 }
 
