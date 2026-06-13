@@ -4,8 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 import 'package:pencatat_keuangan/config/app_theme.dart';
+import 'package:pencatat_keuangan/config/api_config.dart';
 import 'package:pencatat_keuangan/providers/auth_provider.dart';
 import 'package:pencatat_keuangan/services/api_service.dart';
 import 'package:pencatat_keuangan/widgets/upgrade_dialog.dart';
@@ -370,10 +372,6 @@ class SettingsScreen extends ConsumerWidget {
     int year,
   ) async {
     try {
-      debugPrint('[Export] ===== Memulai ekspor $type =====');
-      debugPrint('[Export] Bulan: $month, Tahun: $year');
-
-      // Step 1: Download data from API first
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -384,68 +382,36 @@ class SettingsScreen extends ConsumerWidget {
       }
 
       final apiService = ref.read(_apiServiceProvider);
-      final endpoint = type == 'xlsx' ? '/export/excel' : '/export/pdf';
-      debugPrint('[Export] Memanggil API: $endpoint');
+      final endpoint = type == 'xlsx' ? ApiConfig.exportExcel : ApiConfig.exportPdf;
+      final ext = type == 'xlsx' ? 'xlsx' : 'pdf';
+      final fileName = 'transaksi_${year}_$month.$ext';
 
-      final response = await apiService.getBytes(
+      // Get documents directory directly
+      final dir = await getApplicationDocumentsDirectory();
+      final savePath = '${dir.path}/$fileName';
+
+      // Download file directly using downloadFile
+      await apiService.downloadFile(
         endpoint,
-        queryParameters: {'month': month, 'year': year},
+        savePath,
+        queryParams: {'month': month.toString(), 'year': year.toString()},
       );
-
-      debugPrint('[Export] Response status: ${response.statusCode}');
-      debugPrint(
-        '[Export] Response data size: ${response.data?.length ?? 0} bytes',
-      );
-
-      if (response.data == null || response.data!.isEmpty) {
-        debugPrint('[Export] ERROR: Response data kosong!');
-        throw Exception('Server mengembalikan data kosong');
-      }
-
-      final bytes = response.data!;
-      final fileName = 'transaksi_${year}_$month.$type';
-
-      // Step 2: Open file picker with bytes (required on Android/iOS)
-      debugPrint(
-        '[Export] Membuka file picker untuk: $fileName (${bytes.length} bytes)',
-      );
-
-      final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Simpan file $type',
-        fileName: fileName,
-        type: type == 'xlsx' ? FileType.any : FileType.custom,
-        allowedExtensions: type == 'xlsx' ? null : [type],
-        bytes: Uint8List.fromList(bytes),
-      );
-
-      debugPrint('[Export] File picker result: $savePath');
-
-      if (savePath == null) {
-        debugPrint('[Export] User membatalkan file picker');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ekspor dibatalkan'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-        return;
-      }
-
-      debugPrint('[Export] File berhasil disimpan ke: $savePath');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('File $fileName berhasil disimpan!'),
+            content: const Text('File berhasil diunduh'),
             backgroundColor: AppColors.income,
-            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Buka',
+              textColor: Colors.white,
+              onPressed: () {
+                OpenFile.open(savePath);
+              },
+            ),
           ),
         );
       }
-
-      debugPrint('[Export] ===== Ekspor $type selesai =====');
     } on DioException catch (e) {
       debugPrint('[Export] DioException: ${e.type}');
       debugPrint('[Export] DioException message: ${e.message}');
@@ -459,10 +425,6 @@ class SettingsScreen extends ConsumerWidget {
           final body = e.response!.data;
           if (body is Map && body.containsKey('error')) {
             errorMsg = '$errorMsg: ${body['error']}';
-          } else if (body is List<int>) {
-            final decoded = String.fromCharCodes(body);
-            debugPrint('[Export] Response body (decoded): $decoded');
-            errorMsg = '$errorMsg (status: ${e.response?.statusCode})';
           }
         } catch (_) {}
       }

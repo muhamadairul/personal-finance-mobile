@@ -24,7 +24,7 @@ class ReportScreen extends ConsumerStatefulWidget {
 
 class _ReportScreenState extends ConsumerState<ReportScreen>
     with AutomaticKeepAliveClientMixin {
-  bool _isExporting = false;
+  String? _exportingType;
 
   @override
   bool get wantKeepAlive => true;
@@ -197,7 +197,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
       return;
     }
 
-    setState(() => _isExporting = true);
+    setState(() => _exportingType = type);
 
     try {
       final filePath =
@@ -206,7 +206,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('File berhasil diunduh'),
+            content: const Text('File berhasil diunduh'),
             backgroundColor: AppColors.income,
             action: SnackBarAction(
               label: 'Buka',
@@ -228,7 +228,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
         );
       }
     } finally {
-      if (mounted) setState(() => _isExporting = false);
+      if (mounted) setState(() => _exportingType = null);
     }
   }
 
@@ -423,6 +423,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
             icon: Icons.picture_as_pdf,
             label: 'Export PDF',
             isPro: isPro,
+            isLoading: _exportingType == 'pdf',
+            isAnyExporting: _exportingType != null,
             onTap: () => _handleExport('pdf'),
           ),
         ),
@@ -432,6 +434,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
             icon: Icons.table_chart,
             label: 'Export Excel',
             isPro: isPro,
+            isLoading: _exportingType == 'excel',
+            isAnyExporting: _exportingType != null,
             onTap: () => _handleExport('excel'),
           ),
         ),
@@ -443,10 +447,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
     required IconData icon,
     required String label,
     required bool isPro,
+    required bool isLoading,
+    required bool isAnyExporting,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: _isExporting ? null : onTap,
+      onTap: isAnyExporting ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -463,7 +469,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (_isExporting)
+            if (isLoading)
               const SizedBox(
                 width: 18,
                 height: 18,
@@ -477,14 +483,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen>
               ),
             const SizedBox(width: 8),
             Text(
-              _isExporting ? 'Mengunduh...' : label,
+              isLoading ? 'Mengunduh...' : label,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isPro ? AppColors.textPrimary : AppColors.textSecondary,
               ),
             ),
-            if (!isPro && !_isExporting) ...[
+            if (!isPro && !isLoading) ...[
               const SizedBox(width: 6),
               const Icon(Icons.lock, size: 14, color: Color(0xFFFFD700)),
             ],
